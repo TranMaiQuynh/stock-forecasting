@@ -1,0 +1,97 @@
+# ==============================================================================
+# STOCK FORECASTING CONFIGURATION
+# Tuân thủ chuẩn Yahoo Finance (yfinance) & Nghiên cứu khoa học phân tầng phiên bản
+# ==============================================================================
+
+# 1. Cấu hình Dữ liệu (Yahoo Finance)
+data:
+  ticker: "AAPL"                     # Mã cổ phiếu mặc định (Apple)
+  benchmark_ticker: "^GSPC"          # S&P 500 để so sánh hiệu quả đầu tư
+
+  # Danh sách các mã cổ phiếu sẽ được train (Multi-Ticker Experiment)
+  # AAPL: Ổn định, xu hướng tăng trưởng dài hạn rõ ràng
+  # TSLA: Biến động cực mạnh, kiểm tra khả năng xử lý noise cao của mô hình
+  # MSFT: Tương quan cao với AAPL nhưng ít biến động hơn — bộ so sánh đa dạng
+  training_tickers:
+    - "AAPL"
+    - "TSLA"
+    - "MSFT"
+
+  # Danh sách seeds để chạy multi-seed experiment (đảm bảo tính ổn định của thuật toán)
+  training_seeds:
+    - 42
+    - 100
+
+  macro_tickers:                     # Các chỉ số vĩ mô trên Yahoo Finance để mô hình có "ngữ cảnh" thị trường
+    - "^VIX"                         # Chỉ số biến động (Chỉ số sợ hãi). VIX cao thường đi kèm thị trường giảm.
+    - "^TNX"                         # Lợi suất trái phiếu chính phủ Mỹ kỳ hạn 10 năm. Lãi suất tăng thường gây áp lực lên cổ phiếu công nghệ như AAPL.
+  start_date: "2018-01-01"           # Ngày bắt đầu lấy dữ liệu
+  end_date: "2024-12-31"             # Ngày kết thúc
+  cache_dir: "data"                  # Thư mục lưu cache dữ liệu tải về
+  target_col: "Close"                # Cột mục tiêu dự báo là biến "giá đóng cửa"
+  use_log_return: false              # Dự báo giá chuẩn hóa hoặc log-return
+
+# 2. Cấu hình Cửa sổ Chuỗi Thời Gian
+# window (cửa sổ trượt): là một "khung nhìn" chứa N ngày quá khứ, được dùng để dự đoán N_out ngày tương lai. Về bản chất, nó là kích thước bộ nhớ của mô hình.
+window:
+  input_window: 60                   # Số ngày quá khứ gần nhất đưa vào mô hình (Lookback window = 60 phiên)
+  forecast_horizon: 1                # Số ngày tương lai cần dự báo (1 ngày cho v0/v1/v2, 7 ngày cho v3)
+  multi_step_horizon: 7              # Số ngày tương lai cho bài toán mở rộng (v3)
+
+# 3. Phân tách Dữ liệu (Purged Time-Series Split)
+# Purged Time-Series Split: pp chia theo trình tự thời gian để tránh lỗi data leakage
+split:
+  train_ratio: 0.70                  # 70% dữ liệu huấn luyện
+  val_ratio: 0.15                    # 15% dữ liệu kiểm chuẩn
+  test_ratio: 0.15                   # 15% dữ liệu kiểm thử thực tế (Out-of-sample)
+
+# 4. Cấu hình Phiên bản Mô hình (Ablation Study Versions)
+# v0: Dữ liệu giá thô (OHLCV) + Vanilla LSTM / Vanilla CNN1D
+# v1: Dữ liệu làm giàu 20+ Chỉ báo Kỹ thuật + Deep LSTM / Deep CNN1D
+# v2: Proposed SOTA (CNN-BiLSTM-MultiHead-Attention)
+# v3: Multi-step Seq2Seq with Attention
+model:
+  active_version: "v0"               # Phiên bản đang chạy: "baseline", "v0", "v1", "v2", "v3"
+  
+  # Cấu hình kiến trúc
+  lstm:
+    hidden_dim: 64                   # Kích thước chiều ẩn (Nếu để quá lớn (ví dụ: 512), mô hình sẽ học thuộc lòng biểu đồ quá khứ nhưng dự báo tương lai cực kém)
+    num_layers: 2                    # Số lớp LSTM chồng lên nhau 
+    dropout: 0.2                     # Tỷ lệ dropout (Trong quá trình huấn luyện, mô hình sẽ ngẫu nhiên "tắt" 20% số nơ-ron. Điều này bắt các nơ-ron còn lại phải làm việc chăm chỉ hơn, giúp mô hình không bị phụ thuộc vào một vài tín hiệu nhiễu ngẫu nhiên của thị trường.)
+  
+  cnn1d:
+    num_filters: 64                  # Số lượng bộ lọc
+    kernel_size: 3                   # Kích thước kernel (Ở đây nó sẽ quét qua từng cụm 3 ngày liên tiếp để trích xuất đặc trưng)
+    dropout: 0.2                     # Tỷ lệ dropout (Trong quá trình huấn luyện, mô hình sẽ ngẫu nhiên "tắt" 20% số nơ-ron. Điều này bắt các nơ-ron còn lại phải làm việc chăm chỉ hơn, giúp mô hình không bị phụ thuộc vào một vài tín hiệu nhiễu ngẫu nhiên của thị trường.)
+    
+  cnn_bilstm_attention:
+    cnn_filters: 64                  # Số lượng bộ lọc CNN
+    kernel_size: 3                   # Kích thước kernel CNN
+    lstm_hidden: 64                  # Số chiều ẩn LSTM
+    num_heads: 4                     # Số lượng head attention
+    dropout: 0.2                     # Tỷ lệ dropout
+
+  seq2seq:                           # Dành cho dự báo nhiều ngày - Multi-step
+    hidden_dim: 64                   # Số chiều ẩn
+    dropout: 0.2                     # Tỷ lệ dropout
+
+# 5. Cấu hình Huấn Luyện (Training)
+training:
+  batch_size: 32                   # Kích thước batch
+  epochs: 100                      # Số epoch huấn luyện
+  learning_rate: 0.001             # Tốc độ học (Học nhanh quá thì bỏ lỡ điểm tối ưu (loss nhảy lung tung), chậm quá thì train rất lâu.)
+  weight_decay: 0.0001             # Trọng số decay (Áp dụng L2 Regularization. Nó phạt các trọng số (weights) nếu chúng quá lớn. Trong chứng khoán, một yếu tố không nên có trọng số tuyệt đối, điều này giúp mô hình linh hoạt hơn.)
+  loss_type: "huber"                 # "mse", "mae", "huber", "directional"
+  directional_penalty_weight: 0.5   # Trọng số phạt đoán sai chiều xu hướng
+  early_stopping_patience: 15        # Dừng sớm nếu val_loss không cải thiện sau 15 epochs
+  checkpoint_dir: "checkpoints"
+  device: "auto"                     # "cuda", "cpu", hoặc "auto"
+
+# 6. Cấu hình Kiểm định Tài chính & Backtesting (Trading Simulation)
+# Backtesting: Mô phỏng lại quá trình giao dịch để đánh giá hiệu quả của mô hình
+backtest:
+  initial_capital: 100000.0          # Vốn khởi điểm $100,000
+  commission_fee: 0.001              # Phí giao dịch 0.1% mỗi chiều
+  slippage: 0.0005                   # Trượt giá 0.05%
+  signal_threshold: 0.002            # Ngưỡng dự báo tăng > 0.2% mới phát tín hiệu MUA
+  risk_free_rate: 0.04               # Lãi suất phi rủi ro 4%/năm (chuẩn US Treasury)

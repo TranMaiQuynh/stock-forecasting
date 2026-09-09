@@ -19,5 +19,7 @@ data
 checkpoints/
 output/
 experiments/ 
+logs/**/*.png
+logs/*.png
 
 .idea/
