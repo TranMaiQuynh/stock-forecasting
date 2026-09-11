@@ -112,6 +112,61 @@ def calculate_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def clip_outliers(df: pd.DataFrame, feature_cols: list,
+                  lower_pct: float = 0.01, upper_pct: float = 0.99) -> pd.DataFrame:
+    """
+    [v2-FIX] Winsorization: Cắt giá trị cực trị tại ngưỡng 1% và 99% phân vị.
+    Phân vị ĐƯỢC TÍNH CHỈ TRÊN TẬP TRAIN để tránh data leakage.
+    Không áp dụng cho cột Volume (đột biến khối lượng là tín hiệu quan trọng).
+    """
+    df = df.copy()
+    skip_cols = {'Volume'}  # Giữ nguyên Volume spike (tín hiệu dòng tiền quan trọng)
+    for col in feature_cols:
+        if col in df.columns and col not in skip_cols:
+            lower_bound = df[col].quantile(lower_pct)
+            upper_bound = df[col].quantile(upper_pct)
+            df[col] = df[col].clip(lower=lower_bound, upper=upper_bound)
+    return df
+
+
+def select_orthogonal_features(df: pd.DataFrame) -> list:
+    """
+    [v2-FIX] Chọn lọc đặc trưng trực giao — giảm đa cộng tuyến.
+    Thay vì dùng tất cả 27+ cột (SMA5, SMA10, SMA20... gần giống nhau),
+    chỉ chọn 1 đại diện cho mỗi nhóm tín hiệu:
+    - Trend: MACD_Hist
+    - Momentum: RSI_14
+    - Volatility: ATR_norm (= ATR_14 / Close)
+    - Volume: Volume_Ratio
+    - Return: Log_Return
+    - Macro: Delta_VIX, Macro_TNX
+
+    LƯU Ý: Các cột dẫn xuất (ATR_norm, Delta_VIX) phải được tạo trên
+    processed_df TRƯỚC khi chia train/val/test (trong prepare_dataset_pipeline).
+    Hàm này chỉ CHỌN, KHÔNG TẠO cột mới.
+    """
+    # Bộ đặc trưng cốt lõi (luôn có trong mọi phiên bản)
+    core = ['Open', 'High', 'Low', 'Close', 'Volume']
+
+    # Một đại diện cho mỗi nhóm kỹ thuật (ưu tiên theo thứ tự)
+    tech_candidates = [
+        'MACD_Hist',    # Trend
+        'RSI_14',       # Momentum
+        'ATR_norm',     # Volatility (normalized)
+        'Volume_Ratio', # Volume flow
+        'Log_Return',   # Return (stationary)
+    ]
+    macro_candidates = ['Delta_VIX', 'Macro_TNX']
+
+    selected = list(core)
+    for col in tech_candidates + macro_candidates:
+        if col in df.columns:
+            selected.append(col)
+
+    print(f"[Feature] Lọc trực giao: {len(selected)} đặc trưng được giữ lại ← [{', '.join(selected)}]")
+    return selected
+
+
 def merge_macro_data(main_df: pd.DataFrame, macro_tickers: list, start_date: str, end_date: str, cache_dir: str) -> pd.DataFrame:
     """
     Tải và ghép các chỉ số vĩ mô từ Yahoo Finance (VIX, Lợi suất trái phiếu TNX) vào DataFrame chính.
@@ -136,10 +191,17 @@ def prepare_dataset_pipeline(config: dict, version: str = "v0"):
     Hàm thực thi pipeline chuẩn hóa dữ liệu theo phiên bản (v0, v1, v2, v3).
     - v0: Chỉ dùng giá OHLCV gốc (5 features)
     - v1, v2, v3: Dùng 20+ chỉ báo kỹ thuật + dữ liệu vĩ mô (25+ features)
+
+    [v2-FIX] Cải tiến:
+    - Tự động thêm cột Log_Return khi use_log_return = true
+    - Winsorization: cắt outlier tại [1%, 99%] phân vị của tập Train
+    - Chọn lọc đặc trưng trực giao (10 cột) thay vì dùng tất cả 27+ cột
+    - Thay MinMaxScaler bằng StandardScaler: không giới hạn [0,1], tránh lỗi ngoại suy
     """
     cfg_data = config['data']
     cfg_split = config['split']
-    
+    use_log_return = cfg_data.get('use_log_return', False)
+
     # 1. Tải dữ liệu Yahoo Finance
     raw_df = download_yahoo_data(
         ticker=cfg_data['ticker'],
@@ -147,57 +209,101 @@ def prepare_dataset_pipeline(config: dict, version: str = "v0"):
         end_date=cfg_data['end_date'],
         cache_dir=cfg_data['cache_dir']
     )
-    
+
     if version == "v0":
         print(f"\n[Pipeline] Đang chuẩn bị dữ liệu cho phiên bản v0 (Vanilla - OHLCV cơ bản)...")
-        feature_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
-        processed_df = raw_df[feature_cols].copy()
+        processed_df = raw_df[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
     else:
         print(f"\n[Pipeline] Đang chuẩn bị dữ liệu cho phiên bản {version} (Feature Engineering + Macro)...")
         df_ti = calculate_technical_indicators(raw_df)
         macro_tickers = cfg_data.get('macro_tickers', [])
-        processed_df = merge_macro_data(df_ti, macro_tickers, cfg_data['start_date'], cfg_data['end_date'], cfg_data['cache_dir'])
-        feature_cols = [col for col in processed_df.columns]
+        processed_df = merge_macro_data(
+            df_ti, macro_tickers, cfg_data['start_date'], cfg_data['end_date'], cfg_data['cache_dir']
+        )
+
+    # [v2-FIX] Tạo các cột dẫn xuất TRÊN processed_df TRƯỚC KHI chia train/val/test
+    # Để đảm bảo val_df và test_df cũng có các cột này
+    if 'ATR_14' in processed_df.columns:
+        processed_df['ATR_norm'] = processed_df['ATR_14'] / processed_df['Close']
+    if 'Macro_VIX' in processed_df.columns:
+        processed_df['Delta_VIX'] = processed_df['Macro_VIX'].diff().fillna(0)
+
+    # [v2-FIX] Thêm cột Log_Return vào processed_df
+    if use_log_return and 'Close' in processed_df.columns:
+        processed_df['Log_Return'] = np.log(
+            processed_df['Close'] / processed_df['Close'].shift(1)
+        )
+        processed_df.dropna(inplace=True)
+        print(f"[Pipeline][v2] Đã tính cột Log_Return = ln(P_t / P_{{t-1}})")
 
     # 2. Phân chia Train/Val/Test theo thứ tự thời gian (Không rò rỉ)
     n_total = len(processed_df)
     n_train = int(n_total * cfg_split['train_ratio'])
-    n_val = int(n_total * cfg_split['val_ratio'])
-    
+    n_val   = int(n_total * cfg_split['val_ratio'])
+
     train_df = processed_df.iloc[:n_train].copy()
-    val_df = processed_df.iloc[n_train:n_train + n_val].copy()
-    test_df = processed_df.iloc[n_train + n_val:].copy()
-    
+    val_df   = processed_df.iloc[n_train:n_train + n_val].copy()
+    test_df  = processed_df.iloc[n_train + n_val:].copy()
+
     print(f"[Pipeline] Phân chia dữ liệu: Train={len(train_df)} | Val={len(val_df)} | Test={len(test_df)} | Tổng={n_total}")
+
+    # [v2-FIX] Winsorization: cắt outlier dựa trên phân vị của tập Train
+    if version != "v0":  # v0 có ít cột, OHLCV thường không cần Winsorize
+        all_cols = list(processed_df.columns)
+        train_df = clip_outliers(train_df, all_cols)
+        print(f"[Pipeline][v2] Winsorization hoàn tất trên tập Train (ngưỡng [1%, 99%])")
+
+    # [v2-FIX] Chọn lọc đặc trưng trực giao (giảm đa cộng tuyến)
+    if version in ["v1", "v2", "v3"]:
+        feature_cols = select_orthogonal_features(train_df)
+    else:
+        # v0: giữ OHLCV + Log_Return (nếu có)
+        feature_cols = [c for c in ['Open', 'High', 'Low', 'Close', 'Volume', 'Log_Return']
+                        if c in processed_df.columns]
+
     print(f"[Pipeline] Số lượng đặc trưng đầu vào (Input Features): {len(feature_cols)}")
 
-    # 3. Chuẩn hóa dữ liệu (CHỈ FIT TRÊN TRAIN)
-    feature_scaler = MinMaxScaler(feature_range=(0, 1))
-    target_scaler = MinMaxScaler(feature_range=(0, 1))
-    
-    train_features = feature_scaler.fit_transform(train_df[feature_cols])
-    val_features = feature_scaler.transform(val_df[feature_cols])
-    test_features = feature_scaler.transform(test_df[feature_cols])
-    
+    # 3. Xác định target
     target_col = cfg_data['target_col']
+    if target_col not in processed_df.columns:
+        raise ValueError(
+            f"Cột target '{target_col}' không tồn tại trong DataFrame. "
+            f"Nếu dùng Log_Return, hãy bật use_log_return: true trong config."
+        )
+
+    # 4. [v2-FIX] Chuẩn hóa dữ liệu:
+    #    - Feature scaler: RobustScaler (chống outlier, không bị giới hạn [0,1])
+    #    - Target scaler : StandardScaler (chuẩn hóa Gauss μ=0, σ=1)
+    #    Cả hai chỉ fit trên Train, transform Val/Test → Zero Data Leakage
+    feature_scaler = RobustScaler()    # [v2-FIX] MinMaxScaler → RobustScaler
+    target_scaler  = StandardScaler()  # [v2-FIX] MinMaxScaler → StandardScaler
+
+    train_features = feature_scaler.fit_transform(train_df[feature_cols])
+    val_features   = feature_scaler.transform(val_df[feature_cols])
+    test_features  = feature_scaler.transform(test_df[feature_cols])
+
     train_target = target_scaler.fit_transform(train_df[[target_col]])
-    val_target = target_scaler.transform(val_df[[target_col]])
-    test_target = target_scaler.transform(test_df[[target_col]])
-    
+    val_target   = target_scaler.transform(val_df[[target_col]])
+    test_target  = target_scaler.transform(test_df[[target_col]])
+
+    print(f"[Pipeline][v2] Scaler: RobustScaler (features) + StandardScaler (target='{target_col}')")
+    print(f"[Pipeline] Chỉ fit scaler trên Train → Zero Data Leakage (chuẩn NCKH)")
+
     return {
         'train_features': train_features,
-        'val_features': val_features,
-        'test_features': test_features,
-        'train_target': train_target,
-        'val_target': val_target,
-        'test_target': test_target,
+        'val_features':   val_features,
+        'test_features':  test_features,
+        'train_target':   train_target,
+        'val_target':     val_target,
+        'test_target':    test_target,
         'feature_scaler': feature_scaler,
-        'target_scaler': target_scaler,
-        'feature_cols': feature_cols,
-        'train_df': train_df,
-        'val_df': val_df,
-        'test_df': test_df,
-        'target_col': target_col
+        'target_scaler':  target_scaler,
+        'feature_cols':   feature_cols,
+        'train_df':       train_df,
+        'val_df':         val_df,
+        'test_df':        test_df,
+        'target_col':     target_col,
+        'use_log_return': use_log_return,   # Truyền xuống cho evaluation
     }
 
 

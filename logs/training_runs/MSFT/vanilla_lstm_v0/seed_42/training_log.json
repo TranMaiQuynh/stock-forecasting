@@ -1,0 +1,120 @@
+{
+  "train_loss": [
+    0.36422414129430597,
+    0.36144454939798876,
+    0.3602500422434373,
+    0.359207884831862,
+    0.3579495215957815,
+    0.35566672818227246,
+    0.3537178762934425,
+    0.3519592816179449
+  ],
+  "val_loss": [
+    0.24929402023553848,
+    0.2511682393295424,
+    0.24978671648672648,
+    0.2519070420946394,
+    0.250775613955089,
+    0.25619158893823624,
+    0.2570206820964813,
+    0.25359461456537247
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.364224,
+      "val_loss": 0.249294,
+      "best_val_loss": 0.249294,
+      "lr": 0.001,
+      "time_sec": 1.19,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "MSFT",
+      "seed": 42
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.361445,
+      "val_loss": 0.251168,
+      "best_val_loss": 0.249294,
+      "lr": 0.001,
+      "time_sec": 1.24,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "MSFT",
+      "seed": 42
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.36025,
+      "val_loss": 0.249787,
+      "best_val_loss": 0.249294,
+      "lr": 0.001,
+      "time_sec": 1.19,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "MSFT",
+      "seed": 42
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.359208,
+      "val_loss": 0.251907,
+      "best_val_loss": 0.249294,
+      "lr": 0.001,
+      "time_sec": 1.19,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "MSFT",
+      "seed": 42
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.35795,
+      "val_loss": 0.250776,
+      "best_val_loss": 0.249294,
+      "lr": 0.001,
+      "time_sec": 1.19,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "MSFT",
+      "seed": 42
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.355667,
+      "val_loss": 0.256192,
+      "best_val_loss": 0.249294,
+      "lr": 0.001,
+      "time_sec": 1.28,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "MSFT",
+      "seed": 42
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.353718,
+      "val_loss": 0.257021,
+      "best_val_loss": 0.249294,
+      "lr": 0.001,
+      "time_sec": 1.31,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "MSFT",
+      "seed": 42
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.351959,
+      "val_loss": 0.253595,
+      "best_val_loss": 0.249294,
+      "lr": 0.0005,
+      "time_sec": 1.17,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "MSFT",
+      "seed": 42
+    }
+  ]
+}

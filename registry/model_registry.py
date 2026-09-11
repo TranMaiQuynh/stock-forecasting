@@ -10,13 +10,13 @@ from models.cnn_lstm_attention import CNNBiLSTMAttention
 from models.seq2seq_multistep import Seq2SeqAttentionMultiStep
 
 
-def build_model_by_name(model_name: str, input_dim: int, config: dict, forecast_horizon: int = 1):
+def build_model_by_name(model_name: str, input_dim: int, config: dict, forecast_horizon: int = 1, target_feature_idx: int = -1):
     model_name = model_name.lower()
     cfg_model = config['model']
     
     # 1. Base Models
     if model_name == "naive_baseline":
-        return NaivePersistenceModel(target_feature_idx=3)
+        return NaivePersistenceModel(target_feature_idx=target_feature_idx)
     elif model_name == "linear_baseline":
         return LinearRegressionBaseline()
         

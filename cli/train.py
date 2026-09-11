@@ -65,11 +65,15 @@ def train_single_model(
     )
 
     # ── 2. Xây dựng DataLoaders ───────────────────────────────────────────────
+    cfg_data = cfg['data']
     train_loader, val_loader, test_loader = build_dataloaders(
         data_bundle=data_bundle,
         input_window=cfg_win['input_window'],
         forecast_horizon=forecast_horizon,
         batch_size=cfg_train['batch_size'],
+        use_augmentation=cfg_data.get('use_augmentation', False),  # [v2-FIX] Jittering chỉ trên Train
+        noise_std=cfg_data.get('noise_std', 0.002),
+        n_augmented=cfg_data.get('n_augmented', 2),
     )
 
     # ── 3. Baseline: Fit trực tiếp, không cần Trainer ────────────────────────

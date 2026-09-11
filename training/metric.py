@@ -21,24 +21,31 @@ def compute_mape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(np.mean(np.abs((y_true - y_pred) / (y_true + 1e-9))) * 100.0)
 
 
-def compute_directional_accuracy(y_true: np.ndarray, y_pred: np.ndarray, y_prev: np.ndarray) -> float:
+def compute_directional_accuracy(y_true: np.ndarray, y_pred: np.ndarray, y_prev: np.ndarray = None, is_log_return: bool = False) -> float:
     """
     Tính tỷ lệ dự đoán đúng xu hướng (Tăng/Giảm):
-    DA = Sum(sign(y_true - y_prev) == sign(y_pred - y_prev)) / N * 100%
+    - Nếu is_log_return=True: hướng xác định so với mốc 0 (r > 0 tăng, r < 0 giảm)
+      DA = Sum(sign(y_true) == sign(y_pred)) / N * 100%
+    - Nếu is_log_return=False: so sánh với y_prev (giá phiên trước)
+      DA = Sum(sign(y_true - y_prev) == sign(y_pred - y_prev)) / N * 100%
     """
-    true_dir = np.sign(y_true - y_prev)
-    pred_dir = np.sign(y_pred - y_prev)
+    if is_log_return or y_prev is None:
+        true_dir = np.sign(y_true)
+        pred_dir = np.sign(y_pred)
+    else:
+        true_dir = np.sign(y_true - y_prev)
+        pred_dir = np.sign(y_pred - y_prev)
     correct = np.sum(true_dir == pred_dir)
     total = len(true_dir)
     return float((correct / (total + 1e-9)) * 100.0)
 
 
-def evaluate_ml_metrics(y_true: np.ndarray, y_pred: np.ndarray, y_prev: np.ndarray = None) -> dict:
+def evaluate_ml_metrics(y_true: np.ndarray, y_pred: np.ndarray, y_prev: np.ndarray = None, is_log_return: bool = False) -> dict:
     metrics = {
         'RMSE': compute_rmse(y_true, y_pred),
         'MAE': compute_mae(y_true, y_pred),
         'MAPE': compute_mape(y_true, y_pred)
     }
-    if y_prev is not None:
-        metrics['DA%'] = compute_directional_accuracy(y_true, y_pred, y_prev)
+    if is_log_return or y_prev is not None:
+        metrics['DA%'] = compute_directional_accuracy(y_true, y_pred, y_prev, is_log_return=is_log_return)
     return metrics

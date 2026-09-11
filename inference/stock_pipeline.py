@@ -51,16 +51,20 @@ def run_live_inference(config_path: str = "config/stock.yaml", model_name: str =
     )
     
     if version == "v0":
-        use_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
-        processed_df = raw_df[use_cols].copy()
+        use_cols = [c for c in ['Open', 'High', 'Low', 'Close', 'Volume', 'Log_Return'] if c in raw_df.columns]
+        processed_df = raw_df[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
     else:
         df_ti = calculate_technical_indicators(raw_df)
         macro_tickers = cfg_data.get('macro_tickers', [])
         processed_df = merge_macro_data(df_ti, macro_tickers, "2024-01-01", "2026-12-31", cfg_data['cache_dir'])
-        use_cols = [c for c in processed_df.columns]
-        
-    if len(processed_df) < window_size:
-        raise ValueError(f"Dữ liệu không đủ {window_size} phiên gần nhất để dự báo!")
+
+    if 'ATR_14' in processed_df.columns and 'Close' in processed_df.columns:
+        processed_df['ATR_norm'] = processed_df['ATR_14'] / processed_df['Close']
+    if 'Macro_VIX' in processed_df.columns:
+        processed_df['Delta_VIX'] = processed_df['Macro_VIX'].diff().fillna(0)
+    if 'Close' in processed_df.columns:
+        processed_df['Log_Return'] = np.log(processed_df['Close'] / processed_df['Close'].shift(1))
+    processed_df.dropna(inplace=True)
         
     recent_features = processed_df.iloc[-window_size:][feature_cols].values
     last_close = processed_df['Close'].iloc[-1]
@@ -69,14 +73,23 @@ def run_live_inference(config_path: str = "config/stock.yaml", model_name: str =
     # 3. Khởi tạo mô hình
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     input_dim = len(feature_cols)
-    model = build_model_by_name(model_name, input_dim=input_dim, config=config, forecast_horizon=1)
+    actual_model_name = "cnn_bilstm_attention" if model_name in ["v2_sota", "cnn_bilstm_attention_v2"] else model_name
+    model = build_model_by_name(actual_model_name, input_dim=input_dim, config=config, forecast_horizon=1)
     
-    checkpoint_path = os.path.join(config['training']['checkpoint_dir'], f"{model_name}_{version}_best.pt")
-    if not os.path.exists(checkpoint_path):
-        checkpoint_path = os.path.join(config['training']['checkpoint_dir'], f"{model_name}_best.pt")
+    ckpt_candidates = [
+        os.path.join(config['training']['checkpoint_dir'], ticker, f"{actual_model_name}_{version}_seed42_best.pt"),
+        os.path.join(config['training']['checkpoint_dir'], ticker, f"{actual_model_name}_seed42_best.pt"),
+        os.path.join(config['training']['checkpoint_dir'], f"{actual_model_name}_{version}_best.pt"),
+        os.path.join(config['training']['checkpoint_dir'], f"{model_name}_best.pt"),
+    ]
+    checkpoint_path = None
+    for cand in ckpt_candidates:
+        if os.path.exists(cand):
+            checkpoint_path = cand
+            break
         
-    if not os.path.exists(checkpoint_path):
-        print(f"[Warning] Chưa tìm thấy checkpoint tại {checkpoint_path}, sử dụng trọng số khởi tạo để mô phỏng.")
+    if checkpoint_path is None:
+        print(f"[Warning] Chưa tìm thấy checkpoint phù hợp trong {ckpt_candidates}, sử dụng trọng số khởi tạo để mô phỏng.")
     else:
         model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
         print(f"[Inference] Đã tải thành công checkpoint: {checkpoint_path}")
@@ -93,17 +106,25 @@ def run_live_inference(config_path: str = "config/stock.yaml", model_name: str =
         pred_scaled = model(input_tensor).cpu().numpy().flatten()
         
     # 5. Denormalize bằng target_scaler từ training data
-    pred_price = target_scaler.inverse_transform(pred_scaled.reshape(-1, 1)).flatten()[0]
+    target_val = target_scaler.inverse_transform(pred_scaled.reshape(-1, 1)).flatten()[0]
+    use_log_return = config.get('data', {}).get('use_log_return', False)
+    
+    if use_log_return:
+        pred_log_return = target_val
+        pred_price = float(last_close * np.exp(pred_log_return))
+        pct_change = float((np.exp(pred_log_return) - 1.0) * 100.0)
+    else:
+        pred_price = float(target_val)
+        pct_change = float(((pred_price - last_close) / last_close) * 100.0)
     
     # 6. Tính toán khuyến nghị
-    pct_change = ((pred_price - last_close) / last_close) * 100.0
     if pct_change > 1.0:
         action = "🟢 MUA MẠNH (STRONG BUY)"
-    elif pct_change > 0.2:
+    elif pct_change > 0.05:
         action = "🟢 MUA (BUY / ACCUMULATE)"
     elif pct_change < -1.0:
         action = "🔴 BÁN MẠNH (STRONG SELL)"
-    elif pct_change < -0.2:
+    elif pct_change < -0.05:
         action = "🔴 BÁN (SELL / TAKE PROFIT)"
     else:
         action = "🟡 THEO DÕI (HOLD / CASH)"
@@ -125,3 +146,8 @@ def run_live_inference(config_path: str = "config/stock.yaml", model_name: str =
         'expected_change%': pct_change,
         'action': action
     }
+
+
+if __name__ == "__main__":
+    run_live_inference()
+

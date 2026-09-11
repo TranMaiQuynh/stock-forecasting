@@ -1,0 +1,134 @@
+{
+  "train_loss": [
+    0.3632779667323286,
+    0.36136308962648567,
+    0.36032472334124827,
+    0.3594906945120205,
+    0.3580624146894975,
+    0.35644703724167565,
+    0.3549464762210846,
+    0.35372267853129996,
+    0.35018997178836303
+  ],
+  "val_loss": [
+    0.25102604712758747,
+    0.2501431799360684,
+    0.25023473160607473,
+    0.25233303542648045,
+    0.25161112951380865,
+    0.2528838472706931,
+    0.2532126722591264,
+    0.2560927410210882,
+    0.2551450314266341
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.363278,
+      "val_loss": 0.251026,
+      "best_val_loss": 0.251026,
+      "lr": 0.001,
+      "time_sec": 1.22,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "MSFT",
+      "seed": 100
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.361363,
+      "val_loss": 0.250143,
+      "best_val_loss": 0.250143,
+      "lr": 0.001,
+      "time_sec": 1.31,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "MSFT",
+      "seed": 100
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.360325,
+      "val_loss": 0.250235,
+      "best_val_loss": 0.250143,
+      "lr": 0.001,
+      "time_sec": 1.19,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "MSFT",
+      "seed": 100
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.359491,
+      "val_loss": 0.252333,
+      "best_val_loss": 0.250143,
+      "lr": 0.001,
+      "time_sec": 1.14,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "MSFT",
+      "seed": 100
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.358062,
+      "val_loss": 0.251611,
+      "best_val_loss": 0.250143,
+      "lr": 0.001,
+      "time_sec": 1.19,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "MSFT",
+      "seed": 100
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.356447,
+      "val_loss": 0.252884,
+      "best_val_loss": 0.250143,
+      "lr": 0.001,
+      "time_sec": 1.26,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "MSFT",
+      "seed": 100
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.354946,
+      "val_loss": 0.253213,
+      "best_val_loss": 0.250143,
+      "lr": 0.001,
+      "time_sec": 1.22,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "MSFT",
+      "seed": 100
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.353723,
+      "val_loss": 0.256093,
+      "best_val_loss": 0.250143,
+      "lr": 0.001,
+      "time_sec": 1.21,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "MSFT",
+      "seed": 100
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.35019,
+      "val_loss": 0.255145,
+      "best_val_loss": 0.250143,
+      "lr": 0.0005,
+      "time_sec": 1.21,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "MSFT",
+      "seed": 100
+    }
+  ]
+}

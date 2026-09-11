@@ -23,3 +23,7 @@ logs/**/*.png
 logs/*.png
 
 .idea/
+
+# Private docs
+CAM_NANG_BAO_VE_DU_AN.md
+*cam_nang*

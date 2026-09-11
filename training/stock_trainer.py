@@ -88,9 +88,11 @@ class StockTrainer:
 
         # ── Hàm Loss ──────────────────────────────────────────────────────────
         self.loss_type = cfg_train.get('loss_type', 'huber')
+        use_log_return = config.get('data', {}).get('use_log_return', False)
         self.criterion = get_loss_function(
             loss_type=self.loss_type,
-            penalty_weight=cfg_train.get('directional_penalty_weight', 0.5)
+            penalty_weight=cfg_train.get('directional_penalty_weight', 0.5),
+            use_log_return=use_log_return,  # [v2-FIX] Truyền chế độ target cho DirectionalLoss
         )
         self.uses_directional_loss = isinstance(self.criterion, DirectionalPenaltyLoss)
 

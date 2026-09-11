@@ -176,3 +176,75 @@ def plot_and_save_results(actual_prices: np.ndarray, pred_prices: np.ndarray,
     plt.close()
     
     return pred_chart_path, equity_chart_path
+
+
+def calculate_directional_accuracy_detailed(y_true, y_pred, y_prev=None, is_log_return: bool = True):
+    """[v2-FIX] DA chi tiet: loc bo ngay dung gia, phan tich rieng Tang/Giam.
+    - is_log_return=True: huong tang/giam xac dinh so voi moc 0 (sign(y)).
+    - is_log_return=False: so sanh voi y_prev (sign(y - y_prev)).
+    Returns: dict voi DA%, DA_filtered%, Up_correct%, Down_correct%.
+    """
+    import numpy as _np
+    y_true = _np.array(y_true).flatten()
+    y_pred = _np.array(y_pred).flatten()
+    if is_log_return or y_prev is None:
+        true_dir = _np.sign(y_true)
+        pred_dir = _np.sign(y_pred)
+    else:
+        y_prev = _np.array(y_prev).flatten()
+        true_dir = _np.sign(y_true - y_prev)
+        pred_dir = _np.sign(y_pred - y_prev)
+    total = len(true_dir)
+    da_all = float((true_dir == pred_dir).mean() * 100.0)
+    valid_mask = true_dir != 0
+    filtered = int(valid_mask.sum())
+    da_filtered = (
+        float((true_dir[valid_mask] == pred_dir[valid_mask]).mean() * 100.0)
+        if filtered > 0 else 0.0
+    )
+    up_mask = true_dir == 1
+    down_mask = true_dir == -1
+    up_correct = float((pred_dir[up_mask] == 1).mean() * 100.0) if up_mask.sum() > 0 else 0.0
+    down_correct = float((pred_dir[down_mask] == -1).mean() * 100.0) if down_mask.sum() > 0 else 0.0
+    return {
+        "DA%": round(da_all, 2),
+        "DA_filtered%": round(da_filtered, 2),
+        "Up_correct%": round(up_correct, 2),
+        "Down_correct%": round(down_correct, 2),
+        "Total_samples": total,
+        "Filtered_samples": filtered,
+    }
+
+
+def run_cross_ticker_summary(results_list, output_dir="output"):
+    """[v2-FIX] Tong hop ket qua Mean +- Std theo nhieu tickers x seeds (chuan NCKH).
+    Moi dict trong results_list phai co: model, ticker, seed + cac metric columns.
+    """
+    import os as _os
+    import pandas as _pd
+    _os.makedirs(output_dir, exist_ok=True)
+    df = _pd.DataFrame(results_list)
+    exclude = {"ticker", "seed", "model", "version"}
+    metric_cols = [c for c in df.columns if c not in exclude]
+    grouped = df.groupby(["model", "ticker"])[metric_cols]
+    mean_df = grouped.mean().round(3)
+    std_df = grouped.std().round(3).fillna(0)
+    combined = {}
+    for col in metric_cols:
+        combined[col] = mean_df[col].astype(str) + " +- " + std_df[col].astype(str)
+    summary_df = _pd.DataFrame(combined)
+    path = _os.path.join(output_dir, "cross_ticker_summary.md")
+    try:
+        overall = df.groupby("model")[metric_cols].agg(["mean", "std"]).round(3)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("# Cross-Ticker Results Summary (Mean +- Std)\n")
+            f.write("> Chuan bao cao NCKH: moi o = Mean +- Std tren nhieu seeds\n\n")
+            f.write("## Chi tiet theo (Model x Ticker)\n")
+            f.write(summary_df.to_markdown())
+            f.write("\n\n## Tong hop theo Model\n")
+            f.write(overall.to_markdown())
+    except Exception:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(summary_df.to_string())
+    print(f"[CrossTicker] Da luu bang Mean+-Std -> {path}")
+    return summary_df
