@@ -28,7 +28,7 @@ import torch
 from preprocessing.run_pipeline import load_config, prepare_dataset_pipeline
 from datasets.stock_dataset import build_dataloaders
 from registry.model_registry import build_model_by_name
-from training.stock_trainer import StockTrainer, generate_training_summary_report
+from training.stock_trainer import StockTrainer, generate_training_summary_report, set_seed
 
 
 def train_single_model(
@@ -44,8 +44,13 @@ def train_single_model(
       logs/training_runs/{TICKER}/{model_name}/seed_{N}/epoch_XXX.png
     """
     print(f"\n{'='*70}")
-    print(f"   🚀 TRAIN: {model_name.upper()} | {ticker} | Seed={seed} | Version={version}")
+    print(f"    TRAIN: {model_name.upper()} | {ticker} | Seed={seed} | Version={version}")
     print(f"{'='*70}")
+
+    # Đặt seed ngay tại đây — TRƯỜC mọi lời gọi có dùng RNG:
+    # build_dataloaders (jittering dùng np.random) và build_model_by_name (weight init dùng torch)
+    # 1 điểm gọi duy nhất — không re-seed trong Trainer.__init__ hoặc fit()
+    set_seed(seed)
 
     # ── 1. Chuẩn bị dữ liệu theo ticker và phiên bản ─────────────────────────
     # Ghi đè ticker trong config để tải đúng cổ phiếu
@@ -71,14 +76,24 @@ def train_single_model(
         input_window=cfg_win['input_window'],
         forecast_horizon=forecast_horizon,
         batch_size=cfg_train['batch_size'],
-        use_augmentation=cfg_data.get('use_augmentation', False),  # [v2-FIX] Jittering chỉ trên Train
+        use_augmentation=cfg_data.get('use_augmentation', False),  # Jittering chỉ trên Train
         noise_std=cfg_data.get('noise_std', 0.002),
         n_augmented=cfg_data.get('n_augmented', 2),
     )
 
-    # ── 3. Baseline: Fit trực tiếp, không cần Trainer ────────────────────────
+    # ── 3. Baseline: Fit trực tiếp, không cần Trainer ─────────────────────────────────────────
     if "baseline" in model_name:
-        model = build_model_by_name(model_name, input_dim=input_dim, config=config)
+        # Tính target_feature_idx tại caller (có sẵn feature_cols) thay vì dùng default -1
+        # Đúng như cách cli/evaluate.py:107 đã làm
+        feature_cols = data_bundle['feature_cols']
+        target_col   = data_bundle['target_col']
+        target_feature_idx = (
+            feature_cols.index(target_col) if target_col in feature_cols else -1
+        )
+        model = build_model_by_name(
+            model_name, input_dim=input_dim, config=config,
+            target_feature_idx=target_feature_idx
+        )
         if model_name == "linear_baseline":
             X_train = train_loader.dataset.X.numpy()
             y_train = train_loader.dataset.y.numpy()
