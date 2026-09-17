@@ -23,7 +23,7 @@ def fetch_and_clean(ticker: str, start: str, end: str, retries: int = 3) -> pd.D
     print(f"\n[{ticker}] Đang tải dữ liệu từ {start} đến {end}...")
     for attempt in range(1, retries + 1):
         try:
-            df = yf.download(ticker, start=start, end=end, progress=False)
+            df = yf.download(ticker, start=start, end=end, progress=False, auto_adjust=True)
             if isinstance(df.columns, pd.MultiIndex):
                 df.columns = df.columns.get_level_values(0)
             
