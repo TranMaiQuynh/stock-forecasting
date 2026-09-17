@@ -292,19 +292,27 @@ def prepare_dataset_pipeline(config: dict, version: str = "v0"):
 
     print(f"[Pipeline] Phân chia dữ liệu: Train={len(train_df)} | Val={len(val_df)} | Test={len(test_df)} | Tổng={n_total}")
 
-    # [v2-FIX] Winsorization: bounds tính từ Train, áp đồng nhất lên cả 3 tập
-    # target_col được loại khỏi clipping — scaler phải thấy phân phối thật
-    if version != "v0":  # v0 có ít cột, OHLCV thường không cần Winsorize
+    # Winsorization: tính bounds từ Train, nhưng CHỈ áp lên bản sao *_feat_df dùng cho feature_scaler.
+    # train_df / val_df / test_df GIỮ NGUYÊN giá trị gốc — cli/evaluate.py đọc test_df['Close']
+    # làm actual_prices (ground-truth backtest). Nếu mutate test_df ở đây, giá Close sẽ bị flat-cap
+    # tại ngưỡng 99th-percentile của Train → sai lệch toàn bộ RMSE, Sharpe, Total_Return, MDD.
+    if version != "v0":
         target_col_for_clip = cfg_data.get('target_col')
         all_cols = list(processed_df.columns)
-        train_df, clip_bounds = clip_outliers(train_df, all_cols, target_col=target_col_for_clip)
-        val_df  = apply_clip_bounds(val_df,  clip_bounds)
-        test_df = apply_clip_bounds(test_df, clip_bounds)
-        print(f"[Pipeline][v2] Winsorization hoàn tất: bounds từ Train → áp lên Val + Test (ngưỡng [1%, 99%])")
+        # Bản sao chỉ dùng cho feature_scaler — không trả ra ngoài
+        train_feat_df, clip_bounds = clip_outliers(train_df.copy(), all_cols, target_col=target_col_for_clip)
+        val_feat_df  = apply_clip_bounds(val_df.copy(),  clip_bounds)
+        test_feat_df = apply_clip_bounds(test_df.copy(), clip_bounds)
+        print(f"[Pipeline][v2] Winsorization hoàn tất: bounds từ Train → áp lên bản sao feat_df (ngưỡng [1%, 99%])")
+        print(f"[Pipeline][v2] train_df/val_df/test_df gốc GIỮ NGUYÊN → ground-truth backtest không bị ảnh hưởng")
+    else:
+        # v0: không Winsorize — dùng trực tiếp
+        train_feat_df, val_feat_df, test_feat_df = train_df, val_df, test_df
 
     # [v2-FIX] Chọn lọc đặc trưng trực giao (giảm đa cộng tuyến)
+    # Dùng train_feat_df (đã clip) để select_orthogonal_features — nhất quán với fit scaler bên dưới
     if version in ["v1", "v2", "v3"]:
-        feature_cols = select_orthogonal_features(train_df)
+        feature_cols = select_orthogonal_features(train_feat_df)
     else:
         # v0: giữ OHLCV + Log_Return (nếu có)
         feature_cols = [c for c in ['Open', 'High', 'Low', 'Close', 'Volume', 'Log_Return']
@@ -321,16 +329,17 @@ def prepare_dataset_pipeline(config: dict, version: str = "v0"):
         )
 
     # 4. [v2-FIX] Chuẩn hóa dữ liệu:
-    #    - Feature scaler: RobustScaler (chống outlier, không bị giới hạn [0,1])
-    #    - Target scaler : StandardScaler (chuẩn hóa Gauss μ=0, σ=1)
-    #    Cả hai chỉ fit trên Train, transform Val/Test → Zero Data Leakage
+    #    - feature_scaler fit/transform trên *_feat_df (đã Winsorize) → đặc trưng sạch cho model
+    #    - target_scaler  fit/transform trên train_df gốc (target không bị clip) → phân phối thật
+    #    Cả hai chỉ fit trên Train → Zero Data Leakage
     feature_scaler = RobustScaler()    # [v2-FIX] MinMaxScaler → RobustScaler
     target_scaler  = StandardScaler()  # [v2-FIX] MinMaxScaler → StandardScaler
 
-    train_features = feature_scaler.fit_transform(train_df[feature_cols])
-    val_features   = feature_scaler.transform(val_df[feature_cols])
-    test_features  = feature_scaler.transform(test_df[feature_cols])
+    train_features = feature_scaler.fit_transform(train_feat_df[feature_cols])
+    val_features   = feature_scaler.transform(val_feat_df[feature_cols])
+    test_features  = feature_scaler.transform(test_feat_df[feature_cols])
 
+    # target_scaler dùng train_df gốc (target_col đã được loại khỏi clip từ trước)
     train_target = target_scaler.fit_transform(train_df[[target_col]])
     val_target   = target_scaler.transform(val_df[[target_col]])
     test_target  = target_scaler.transform(test_df[[target_col]])
@@ -348,11 +357,13 @@ def prepare_dataset_pipeline(config: dict, version: str = "v0"):
         'feature_scaler': feature_scaler,
         'target_scaler':  target_scaler,
         'feature_cols':   feature_cols,
+        # train_df/val_df/test_df trả về GIỮ NGUYÊN giá gốc (chưa clip)
+        # → cli/evaluate.py đọc test_df['Close'] làm ground-truth backtest vẫn là giá thật
         'train_df':       train_df,
         'val_df':         val_df,
         'test_df':        test_df,
         'target_col':     target_col,
-        'use_log_return': use_log_return,   # Truyền xuống cho evaluation
+        'use_log_return': use_log_return,
     }
 
 
