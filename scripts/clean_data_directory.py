@@ -42,7 +42,7 @@ def main():
                 print(f"  -> Hợp nhất thành công {len(df)} dòng vào: {full_file}")
             else:
                 print(f"  -> Tải mới {macro} từ Yahoo Finance...")
-                df = yf.download(macro, start="2018-01-01", end="2026-12-31", progress=False)
+                df = yf.download(macro, start="2018-01-01", end="2026-12-31", progress=False, auto_adjust=True)
                 if isinstance(df.columns, pd.MultiIndex):
                     df.columns = df.columns.get_level_values(0)
                 df.dropna(inplace=True)

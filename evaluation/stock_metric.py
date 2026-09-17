@@ -21,6 +21,12 @@ def calculate_financial_metrics(actual_prices: np.ndarray, pred_prices: np.ndarr
                                 risk_free_rate: float = 0.04) -> dict:
     """
     Mô phỏng chiến lược giao dịch định lượng dựa trên tín hiệu dự báo của mô hình.
+
+    Giả định dòng tiền (nhất quán trong toàn bộ các chỉ số):
+    - Khi positions = 1 (Long): kiếm lợi nhuận từ cổ phiếu, trừ phí giao dịch.
+    - Khi positions = 0 (Cash): vốn được gửi tiết kiệm/money market sinh lãi `daily_rf`.
+    Điều này khiến Total_Return%, CAGR%, Equity_Curve, Sharpe và Sortino
+    cùng chia sẻ một mô hình dòng tiền duy nhất, không tự mâu thuẫn.
     """
     actual_prices = actual_prices.flatten()
     pred_prices = pred_prices.flatten()
@@ -44,9 +50,18 @@ def calculate_financial_metrics(actual_prices: np.ndarray, pred_prices: np.ndarr
     trades = np.abs(np.diff(np.insert(positions, 0, 0.0)))
     total_cost_per_trade = commission + slippage
     trading_costs = trades * total_cost_per_trade
-    
-    # Lợi nhuận chiến lược sau khi trừ phí và trượt giá
-    strategy_returns = (positions * actual_returns) - trading_costs
+
+    # Lợi nhuận hàng ngày phi rủi ro (nhất quán với Sharpe/Sortino bên dưới)
+    daily_rf = risk_free_rate / 252.0
+
+    # Lợi nhuận chiến lược sau khi trừ phí và trượt giá:
+    # - Ngày Long (p=1): r_actual - cost
+    # - Ngày Cash (p=0): daily_rf - cost (vốn gửi tiết kiệm, trừ phí nếu có đổi vị thế)
+    strategy_returns = (
+        positions * actual_returns
+        + (1.0 - positions) * daily_rf
+        - trading_costs
+    )
     
     # Đường cong tài sản (Equity Curve)
     equity_curve = initial_capital * np.cumprod(1.0 + strategy_returns)
@@ -70,7 +85,9 @@ def calculate_financial_metrics(actual_prices: np.ndarray, pred_prices: np.ndarr
     annual_vol = daily_vol * np.sqrt(252) * 100.0
     
     # 4. Sharpe Ratio — Xử lý edge case khi không giao dịch
-    daily_rf = risk_free_rate / 252.0
+    # excess_returns: vượt trội so với lãi phi rủi ro (nhất quán với strategy_returns ở trên)
+    # Khi p=0: excess = daily_rf - cost - daily_rf = -cost ≈ 0  (không phải -daily_rf)
+    # Khi p=1: excess = r_actual - cost - daily_rf
     excess_returns = strategy_returns - daily_rf
     
     if num_active_positions == 0 or daily_vol < 1e-10:

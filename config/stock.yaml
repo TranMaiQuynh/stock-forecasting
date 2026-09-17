@@ -41,7 +41,7 @@ data:
   target_col: "Log_Return"                                    
   use_log_return: true
 
-  # [v2-FIX] Jittering Augmentation 
+  # Jittering Augmentation 
   use_augmentation: true             
   noise_std: 0.002                  
   n_augmented: 2                  
@@ -59,6 +59,8 @@ split:
   train_ratio: 0.70                  # 70% dữ liệu huấn luyện
   val_ratio: 0.15                    # 15% dữ liệu kiểm chuẩn
   test_ratio: 0.15                   # 15% dữ liệu kiểm thử thực tế (Out-of-sample)
+                                     # DOCUMENTATION ONLY — không được đọc trong code;
+                                     # test_df = phần còn lại sau train+val (tránh rounding gap)
 
 # 4. Cấu hình Phiên bản Mô hình (Ablation Study Versions)
 # v0: Dữ liệu giá thô (OHLCV) + Vanilla LSTM / Vanilla CNN1D
@@ -69,43 +71,46 @@ model:
   active_version: "v0"               # Phiên bản đang chạy: "baseline", "v0", "v1", "v2", "v3"
   
   # Cấu hình kiến trúc
-  # [v2-FIX] Giảm 80% tham số — 1170 mẫu train không đủ cho model cũ (~250k params)
+  # Giảm 80% tham số — 1170 mẫu train không đủ cho model cũ (~250k params)
   # Tỷ lệ tham số/mẫu cũ: ~213 (overfitting cực nặng) → Sau sửa: ~33 (chấp nhận được)
   lstm:
-    hidden_dim: 32                   # [v2-FIX] Giảm 64→32: giảm 75% params BiLSTM, tránh memorize 1170 mẫu train
-    num_layers: 1                    # [v2-FIX] Giảm 2→1 layer: 1 layer BiLSTM đủ cho chuỗi 60 ngày
-    dropout: 0.35                    # [v2-FIX] Tăng 0.2→0.35: siết regularization mạnh hơn
+    hidden_dim: 32                   # Giảm 64→32: giảm 75% params BiLSTM, tránh memorize 1170 mẫu train
+    num_layers: 1                    # Giảm 2→1 layer: 1 layer BiLSTM đủ cho chuỗi 60 ngày
+    dropout: 0.35                    # Tăng 0.2→0.35: siết regularization mạnh hơn
   
   cnn1d:
-    num_filters: 32                  # [v2-FIX] Giảm 64→32 filters
+    num_filters: 32                  # Giảm 64→32 filters
     kernel_size: 3                   # Kích thước kernel (quét qua từng cụm 3 ngày liên tiếp)
-    dropout: 0.35                    # [v2-FIX] Tăng 0.2→0.35
+    dropout: 0.35                    # Tăng 0.2→0.35
     
   cnn_bilstm_attention:
-    cnn_filters: 32                  # [v2-FIX] Giảm 64→32: −75% params CNN
+    cnn_filters: 32                  # Giảm 64→32: −75% params CNN
     kernel_size: 3                   # Kích thước kernel CNN
-    lstm_hidden: 32                  # [v2-FIX] Giảm 64→32: BiLSTM 32×2=64 chiều (thay vì 128)
-    num_heads: 2                     # [v2-FIX] Giảm 4→2 heads: −75% params Attention
-    dropout: 0.35                    # [v2-FIX] Tăng 0.2→0.35
+    lstm_hidden: 32                  # Giảm 64→32: BiLSTM 32×2=64 chiều (thay vì 128)
+    num_heads: 2                     # Giảm 4→2 heads: −75% params Attention
+    dropout: 0.35                    # Tăng 0.2→0.35
 
   seq2seq:                           # Dành cho dự báo nhiều ngày - Multi-step
-    hidden_dim: 32                   # [v2-FIX] Giảm 64→32
-    dropout: 0.35                    # [v2-FIX] Tăng 0.2→0.35
+    hidden_dim: 32                   # Giảm 64→32
+    dropout: 0.35                    # Tăng 0.2→0.35
 
 # 5. Cấu hình Huấn Luyện 
 training:
   batch_size: 32
   epochs: 100                     
   learning_rate: 0.001             
-  weight_decay: 0.001              # [v2-FIX] Tăng 0.0001→0.001: phạt L2 mạnh gấp 10× để kiềm chế weights lớn
-  loss_type: "directional"          # [v2-FIX] Kích hoạt DirectionalPenaltyLoss: phạt NẶNG khi đoán sai chiều xu hướng
+  weight_decay: 0.001              # Tăng 0.0001→0.001: phạt L2 mạnh gấp 10× để kiềm chế weights lớn
+  loss_type: "directional"          # Kích hoạt DirectionalPenaltyLoss: phạt NẶNG khi đoán sai chiều xu hướng
                                     # Loss = Huber(ŷ,y) + 0.5 × max(0, −sign(y−y_prev)×(ŷ−y_prev))
                                     # → Mô hình BỊ PHẠT ĐÔI khi dự báo Giảm nhưng thực tế Tăng (và ngược lại)
                                     # Để dùng loss đơn giản: đổi lại thành "huber"
   directional_penalty_weight: 0.5   # Hệ số phạt chiều hướng (0.5 = cân bằng Huber và hướng)
-  early_stopping_patience: 7        # [v2-FIX] Siết chặt 15→7: dừng sớm hơn, tránh overfit sau Best Epoch
+  early_stopping_patience: 7        # Siết chặt 15→7: dừng sớm hơn, tránh overfit sau Best Epoch
   checkpoint_dir: "checkpoints"
-  device: "auto"                    
+  device: "auto"
+  teacher_forcing_ratio: 0.5         # Xác suất dùng nhãn thật tại bước t (chỉ cho Seq2Seq v3)
+                                     # 0.0 = tắt hoàn toàn, 1.0 = luôn dùng nhãn thật
+  teacher_forcing_decay: 0.95        # Hệ số decay sau mỗi epoch (0.95 → ~0 sau ~80 epochs)
 
 # 6. Cấu hình Kiểm định Tài chính & Backtesting (Trading Simulation)
 # Backtesting: Mô phỏng lại quá trình giao dịch để đánh giá hiệu quả của mô hình
@@ -113,5 +118,5 @@ backtest:
   initial_capital: 100000.0          # Vốn khởi điểm $100,000
   commission_fee: 0.001              # Phí giao dịch 0.1% mỗi chiều
   slippage: 0.0005                   # Trượt giá 0.05%
-  signal_threshold: 0.0005           # [v2-FIX] Ngưỡng dự báo tăng > +0.05% (5 bps) mới phát tín hiệu MUA (phù hợp với Return model)
+  signal_threshold: 0.0005           # Ngưỡng dự báo tăng > +0.05% (5 bps) mới phát tín hiệu MUA (phù hợp với Return model)
   risk_free_rate: 0.04               # Lãi suất phi rủi ro 4%/năm (chuẩn US Treasury)

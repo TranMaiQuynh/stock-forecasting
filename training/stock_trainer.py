@@ -22,7 +22,6 @@ import torch
 import numpy as np
 from training.loss import get_loss_function, DirectionalPenaltyLoss
 from training.optimizer import build_optimizer, build_scheduler
-from training.metric import evaluate_ml_metrics
 
 import json
 import matplotlib
@@ -99,6 +98,15 @@ class StockTrainer:
         self.optimizer = build_optimizer(self.model, lr=self.lr, weight_decay=self.weight_decay)
         self.scheduler = build_scheduler(self.optimizer)
 
+        # ── Teacher Forcing (chỉ cho Seq2SeqAttentionMultiStep) ────────────────────────────
+        # Phát hiện một lần tại __init__, không kiểm tra lại mỗi batch
+        import inspect
+        self._model_supports_tf = (
+            'teacher_forcing_ratio' in inspect.signature(self.model.forward).parameters
+        )
+        self._tf_ratio = float(cfg_train.get('teacher_forcing_ratio', 0.0))
+        self._tf_decay = float(cfg_train.get('teacher_forcing_decay', 1.0))
+
         self.history = {'train_loss': [], 'val_loss': [], 'epoch_logs': []}
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -113,7 +121,17 @@ class StockTrainer:
             y_prev_batch = y_prev_batch.to(self.device)
 
             self.optimizer.zero_grad()
-            y_pred = self.model(X_batch)
+
+            # Teacher forcing: chỉ truyền target vào MODEL trong train_epoch
+            # validate() và predict() KHÔNG bao giờ nhận target — đảm bảo bằng cấu trúc code
+            if self._model_supports_tf and self._tf_ratio > 0.0:
+                y_pred = self.model(
+                    X_batch,
+                    target=y_batch,
+                    teacher_forcing_ratio=self._tf_ratio
+                )
+            else:
+                y_pred = self.model(X_batch)
 
             if self.uses_directional_loss:
                 loss = self.criterion(y_pred, y_batch, y_prev_batch)
@@ -270,7 +288,8 @@ class StockTrainer:
 
     # ──────────────────────────────────────────────────────────────────────────
     def fit(self, train_loader, val_loader, verbose: bool = True):
-        set_seed(self.seed)
+        # Seed đã được set tại train_single_model() trước mọi lời gọi RNG.
+        # Không re-seed ở đây để tránh reset trạng thái RNG giữa chừng.
 
         # Tên file checkpoint: checkpoints/{TICKER}/{model_name}_seed{N}_best.pt
         best_model_path = os.path.join(
@@ -288,6 +307,7 @@ class StockTrainer:
 
         best_val_loss = float('inf')
         patience_counter = 0
+        current_tf_ratio = self._tf_ratio  # Teacher forcing ratio cho epoch hiện tại
 
         for epoch in range(1, self.epochs + 1):
             epoch_start = time.time()
@@ -302,6 +322,11 @@ class StockTrainer:
 
             if self.scheduler:
                 self.scheduler.step(val_loss)
+
+            # Decay teacher forcing ratio sau mỗi epoch (hướng tới autoregressive thuần túy)
+            if self._model_supports_tf and self._tf_ratio > 0.0:
+                current_tf_ratio *= self._tf_decay
+                self._tf_ratio = current_tf_ratio
 
             is_best = False
             if val_loss < best_val_loss:
