@@ -2,10 +2,6 @@
 PyTorch Dataset & DataLoader cho dữ liệu chuỗi thời gian chứng khoán.
 Hỗ trợ cả dự báo đơn bước (Single-step: t+1) và đa bước (Multi-step: t+1 ... t+k).
 Trả thêm y_prev (giá Close phiên trước) để hỗ trợ DirectionalPenaltyLoss.
-
-[v2-FIX] Bổ sung:
-- augment_time_series(): Tăng cường dữ liệu bằng Jittering (thêm nhiễu Gauss vi mô)
-- Tham số use_augmentation trong StockTimeSeriesDataset
 """
 
 import torch
@@ -17,7 +13,7 @@ def augment_time_series(X: np.ndarray, y: np.ndarray, y_prev: np.ndarray,
                          n_augmented: int = 2,
                          noise_std: float = 0.002) -> tuple:
     """
-    [v2-FIX] Tăng cường dữ liệu chuỗi thời gian bằng Jittering.
+    Tăng cường dữ liệu chuỗi thời gian bằng Jittering.
     Mục đích: Mở rộng tập Train từ ~1170 mẫu lên ~3510 mẫu (n_aug=2)
                mà không làm sai lệch phân phối thị trường.
 
@@ -54,7 +50,7 @@ def augment_time_series(X: np.ndarray, y: np.ndarray, y_prev: np.ndarray,
 
 class StockTimeSeriesDataset(Dataset):
     def __init__(self, features: np.ndarray, targets: np.ndarray, input_window: int = 60,
-                 forecast_horizon: int = 1, close_feature_idx: int = None,
+                 forecast_horizon: int = 1,
                  use_augmentation: bool = False, noise_std: float = 0.002,
                  n_augmented: int = 2):
         """
@@ -62,16 +58,14 @@ class StockTimeSeriesDataset(Dataset):
         targets: Mảng numpy (N, 1) hoặc (N, target_dim)
         input_window: Số phiên quan sát trong quá khứ (ví dụ: 60 ngày)
         forecast_horizon: Số phiên cần dự báo trong tương lai (1 ngày hoặc 7 ngày)
-        close_feature_idx: Index của cột Close trong features (lấy y_prev cho Directional Loss)
-        [v2-FIX] use_augmentation: Bật Jittering augmentation (chỉ cho tập Train)
-        [v2-FIX] noise_std: Độ lệch chuẩn nhiễu Gauss (default=0.002)
-        [v2-FIX] n_augmented: Số bản sao tăng cường (default=2 → ×3 mẫu)
+        use_augmentation: Bật Jittering augmentation (chỉ cho tập Train)
+        noise_std: Độ lệch chuẩn nhiễu Gauss (default=0.002)
+        n_augmented: Số bản sao tăng cường (default=2 → ×3 mẫu)
         """
         self.features = features
         self.targets = targets
         self.input_window = input_window
         self.forecast_horizon = forecast_horizon
-        self.close_feature_idx = close_feature_idx
         self.use_augmentation = use_augmentation
         self.noise_std = noise_std
         self.n_augmented = n_augmented
@@ -157,8 +151,7 @@ def build_dataloaders(data_bundle: dict, input_window: int = 60, forecast_horizo
         targets=data_bundle['train_target'],
         input_window=input_window,
         forecast_horizon=forecast_horizon,
-        close_feature_idx=close_idx,
-        use_augmentation=use_augmentation,  # [v2-FIX] Chỉ train mới augment
+        use_augmentation=use_augmentation,  # Chỉ train mới augment
         noise_std=noise_std,
         n_augmented=n_augmented,
     )
@@ -167,7 +160,6 @@ def build_dataloaders(data_bundle: dict, input_window: int = 60, forecast_horizo
         targets=data_bundle['val_target'],
         input_window=input_window,
         forecast_horizon=forecast_horizon,
-        close_feature_idx=close_idx,
         use_augmentation=False,             # Val không augment
     )
     test_dataset = StockTimeSeriesDataset(
@@ -175,7 +167,6 @@ def build_dataloaders(data_bundle: dict, input_window: int = 60, forecast_horizo
         targets=data_bundle['test_target'],
         input_window=input_window,
         forecast_horizon=forecast_horizon,
-        close_feature_idx=close_idx,
         use_augmentation=False,             # Test không augment
     )
     
