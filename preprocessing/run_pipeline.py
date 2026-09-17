@@ -1,6 +1,6 @@
 """
 Pipeline thu thập, làm sạch và trích xuất đặc trưng từ Yahoo Finance (yfinance).
-Tuân thủ nghiêm ngặt nguyên tắc Không Rò Rỉ Dữ Liệu (Zero Data Leakage) cho NCKH.
+Tuân thủ nghiêm ngặt nguyên tắc Không Rò Rỉ Dữ Liệu (Zero Data Leakage).
 """
 
 import os
@@ -27,14 +27,25 @@ def load_config(config_path: str = "config/stock.yaml") -> dict:
 def download_yahoo_data(ticker: str, start_date: str, end_date: str, cache_dir: str = "data") -> pd.DataFrame:
     """
     Tải dữ liệu OHLCV từ Yahoo Finance và lưu cache cục bộ.
+    Tự động tận dụng file tổng 2018-01-01_2026-12-31 nếu có để cắt lát (slice) không cần tải lại.
     """
     os.makedirs(cache_dir, exist_ok=True)
     cache_file = os.path.join(cache_dir, f"{ticker}_{start_date}_{end_date}.csv")
+    full_cache_file = os.path.join(cache_dir, f"{ticker}_2018-01-01_2026-12-31.csv")
     
+    # 1. Ưu tiên kiểm tra file cache chính xác
     if os.path.exists(cache_file):
         print(f"[Data] Đọc dữ liệu cache từ: {cache_file}")
         df = pd.read_csv(cache_file, index_col=0, parse_dates=True)
         return df
+
+    # 2. Kiểm tra file cache toàn dải 2018-2026 và cắt lát theo ngày
+    if os.path.exists(full_cache_file):
+        print(f"[Data] Đọc và trích xuất dữ liệu từ file tổng: {full_cache_file} ({start_date} -> {end_date})")
+        df_full = pd.read_csv(full_cache_file, index_col=0, parse_dates=True)
+        df_slice = df_full.loc[start_date:end_date].copy()
+        if len(df_slice) > 0:
+            return df_slice
 
     print(f"[Data] Đang tải dữ liệu {ticker} từ Yahoo Finance ({start_date} đến {end_date})...")
     df = yf.download(ticker, start=start_date, end=end_date, progress=False)
