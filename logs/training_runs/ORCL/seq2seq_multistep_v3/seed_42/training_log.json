@@ -1,0 +1,148 @@
+{
+  "train_loss": [
+    0.39522751150307833,
+    0.39561438935774346,
+    0.3911586942496123,
+    0.39024966215645823,
+    0.3919702532114806,
+    0.3899313803072329,
+    0.3911321264726144,
+    0.3937404946044639,
+    0.3922126591205597,
+    0.39062865994594714
+  ],
+  "val_loss": [
+    0.7507728263735771,
+    0.7504990920424461,
+    0.7499586082994938,
+    0.7514071650803089,
+    0.7513291612267494,
+    0.7515991516411304,
+    0.7511218078434467,
+    0.7509398981928825,
+    0.7508477605879307,
+    0.7510164305567741
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.395228,
+      "val_loss": 0.750773,
+      "best_val_loss": 0.750773,
+      "lr": 0.001,
+      "time_sec": 6.29,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "ORCL",
+      "seed": 42
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.395614,
+      "val_loss": 0.750499,
+      "best_val_loss": 0.750499,
+      "lr": 0.001,
+      "time_sec": 7.04,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "ORCL",
+      "seed": 42
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.391159,
+      "val_loss": 0.749959,
+      "best_val_loss": 0.749959,
+      "lr": 0.001,
+      "time_sec": 6.47,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "ORCL",
+      "seed": 42
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.39025,
+      "val_loss": 0.751407,
+      "best_val_loss": 0.749959,
+      "lr": 0.001,
+      "time_sec": 6.37,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "ORCL",
+      "seed": 42
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.39197,
+      "val_loss": 0.751329,
+      "best_val_loss": 0.749959,
+      "lr": 0.001,
+      "time_sec": 6.2,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "ORCL",
+      "seed": 42
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.389931,
+      "val_loss": 0.751599,
+      "best_val_loss": 0.749959,
+      "lr": 0.001,
+      "time_sec": 6.26,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "ORCL",
+      "seed": 42
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.391132,
+      "val_loss": 0.751122,
+      "best_val_loss": 0.749959,
+      "lr": 0.001,
+      "time_sec": 6.56,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "ORCL",
+      "seed": 42
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.39374,
+      "val_loss": 0.75094,
+      "best_val_loss": 0.749959,
+      "lr": 0.001,
+      "time_sec": 6.42,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "ORCL",
+      "seed": 42
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.392213,
+      "val_loss": 0.750848,
+      "best_val_loss": 0.749959,
+      "lr": 0.001,
+      "time_sec": 6.55,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "ORCL",
+      "seed": 42
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.390629,
+      "val_loss": 0.751016,
+      "best_val_loss": 0.749959,
+      "lr": 0.0005,
+      "time_sec": 6.03,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "ORCL",
+      "seed": 42
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+{
+  "train_loss": [
+    0.39201752035706133,
+    0.3886370222877573,
+    0.3869610443159386,
+    0.38740809151419886,
+    0.38645545895452854,
+    0.38614626250885153,
+    0.38615524161745,
+    0.38620760529129594,
+    0.385260828115322,
+    0.3855639511788333,
+    0.3856178673329177
+  ],
+  "val_loss": [
+    0.420979263054,
+    0.4217350317372216,
+    0.41788388788700104,
+    0.4119957271549437,
+    0.4162827995088365,
+    0.41606217953893876,
+    0.4149763120545281,
+    0.41273714270856643,
+    0.41559673349062604,
+    0.4134712533818351,
+    0.4132847819063399
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.392018,
+      "val_loss": 0.420979,
+      "best_val_loss": 0.420979,
+      "lr": 0.001,
+      "time_sec": 2.39,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "JNJ",
+      "seed": 100
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.388637,
+      "val_loss": 0.421735,
+      "best_val_loss": 0.420979,
+      "lr": 0.001,
+      "time_sec": 2.49,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "JNJ",
+      "seed": 100
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.386961,
+      "val_loss": 0.417884,
+      "best_val_loss": 0.417884,
+      "lr": 0.001,
+      "time_sec": 2.45,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "JNJ",
+      "seed": 100
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.387408,
+      "val_loss": 0.411996,
+      "best_val_loss": 0.411996,
+      "lr": 0.001,
+      "time_sec": 2.39,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "JNJ",
+      "seed": 100
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.386455,
+      "val_loss": 0.416283,
+      "best_val_loss": 0.411996,
+      "lr": 0.001,
+      "time_sec": 2.45,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "JNJ",
+      "seed": 100
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.386146,
+      "val_loss": 0.416062,
+      "best_val_loss": 0.411996,
+      "lr": 0.001,
+      "time_sec": 2.39,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "JNJ",
+      "seed": 100
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.386155,
+      "val_loss": 0.414976,
+      "best_val_loss": 0.411996,
+      "lr": 0.001,
+      "time_sec": 2.45,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "JNJ",
+      "seed": 100
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.386208,
+      "val_loss": 0.412737,
+      "best_val_loss": 0.411996,
+      "lr": 0.001,
+      "time_sec": 2.55,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "JNJ",
+      "seed": 100
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.385261,
+      "val_loss": 0.415597,
+      "best_val_loss": 0.411996,
+      "lr": 0.001,
+      "time_sec": 2.42,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "JNJ",
+      "seed": 100
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.385564,
+      "val_loss": 0.413471,
+      "best_val_loss": 0.411996,
+      "lr": 0.001,
+      "time_sec": 2.49,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "JNJ",
+      "seed": 100
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.385618,
+      "val_loss": 0.413285,
+      "best_val_loss": 0.411996,
+      "lr": 0.0005,
+      "time_sec": 2.43,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "JNJ",
+      "seed": 100
+    }
+  ]
+}

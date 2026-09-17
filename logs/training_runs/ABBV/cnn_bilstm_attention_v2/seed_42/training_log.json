@@ -1,0 +1,162 @@
+{
+  "train_loss": [
+    0.39816898626309855,
+    0.39225398865011,
+    0.38991659658926503,
+    0.38787711649029344,
+    0.38667282164096833,
+    0.38714496416074257,
+    0.38670734663804374,
+    0.3868131805349279,
+    0.3860405726565255,
+    0.3853483431869083,
+    0.3852703786558575
+  ],
+  "val_loss": [
+    0.4321893842683898,
+    0.4276926944860154,
+    0.42002237940000164,
+    0.41940671267608803,
+    0.42461551912128925,
+    0.4222601865314775,
+    0.42151589236325687,
+    0.42154607983926934,
+    0.4200960702987181,
+    0.4201827614257733,
+    0.41952265716261333
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.398169,
+      "val_loss": 0.432189,
+      "best_val_loss": 0.432189,
+      "lr": 0.001,
+      "time_sec": 8.61,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "ABBV",
+      "seed": 42
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.392254,
+      "val_loss": 0.427693,
+      "best_val_loss": 0.427693,
+      "lr": 0.001,
+      "time_sec": 8.66,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "ABBV",
+      "seed": 42
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.389917,
+      "val_loss": 0.420022,
+      "best_val_loss": 0.420022,
+      "lr": 0.001,
+      "time_sec": 8.48,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "ABBV",
+      "seed": 42
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.387877,
+      "val_loss": 0.419407,
+      "best_val_loss": 0.419407,
+      "lr": 0.001,
+      "time_sec": 8.87,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "ABBV",
+      "seed": 42
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.386673,
+      "val_loss": 0.424616,
+      "best_val_loss": 0.419407,
+      "lr": 0.001,
+      "time_sec": 8.69,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "ABBV",
+      "seed": 42
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.387145,
+      "val_loss": 0.42226,
+      "best_val_loss": 0.419407,
+      "lr": 0.001,
+      "time_sec": 8.52,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "ABBV",
+      "seed": 42
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.386707,
+      "val_loss": 0.421516,
+      "best_val_loss": 0.419407,
+      "lr": 0.001,
+      "time_sec": 8.45,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "ABBV",
+      "seed": 42
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.386813,
+      "val_loss": 0.421546,
+      "best_val_loss": 0.419407,
+      "lr": 0.001,
+      "time_sec": 8.48,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "ABBV",
+      "seed": 42
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.386041,
+      "val_loss": 0.420096,
+      "best_val_loss": 0.419407,
+      "lr": 0.001,
+      "time_sec": 8.63,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "ABBV",
+      "seed": 42
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.385348,
+      "val_loss": 0.420183,
+      "best_val_loss": 0.419407,
+      "lr": 0.001,
+      "time_sec": 8.44,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "ABBV",
+      "seed": 42
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.38527,
+      "val_loss": 0.419523,
+      "best_val_loss": 0.419407,
+      "lr": 0.0005,
+      "time_sec": 8.34,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "ABBV",
+      "seed": 42
+    }
+  ]
+}

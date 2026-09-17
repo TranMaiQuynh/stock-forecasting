@@ -1,0 +1,134 @@
+{
+  "train_loss": [
+    0.41378566688961455,
+    0.4078722270550551,
+    0.4045401606294844,
+    0.4023033093523096,
+    0.40169598813410157,
+    0.4010160007962474,
+    0.4002442516662456,
+    0.4006130291355981,
+    0.39969242413838707
+  ],
+  "val_loss": [
+    0.35358637157413697,
+    0.3507269248366356,
+    0.3538193888962269,
+    0.35345421193374527,
+    0.3530582578645812,
+    0.3559688346253501,
+    0.3541058633062575,
+    0.3510485444631841,
+    0.35357030025786823
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.413786,
+      "val_loss": 0.353586,
+      "best_val_loss": 0.353586,
+      "lr": 0.001,
+      "time_sec": 8.36,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "AMZN",
+      "seed": 42
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.407872,
+      "val_loss": 0.350727,
+      "best_val_loss": 0.350727,
+      "lr": 0.001,
+      "time_sec": 8.69,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "AMZN",
+      "seed": 42
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.40454,
+      "val_loss": 0.353819,
+      "best_val_loss": 0.350727,
+      "lr": 0.001,
+      "time_sec": 8.49,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "AMZN",
+      "seed": 42
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.402303,
+      "val_loss": 0.353454,
+      "best_val_loss": 0.350727,
+      "lr": 0.001,
+      "time_sec": 8.18,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "AMZN",
+      "seed": 42
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.401696,
+      "val_loss": 0.353058,
+      "best_val_loss": 0.350727,
+      "lr": 0.001,
+      "time_sec": 8.06,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "AMZN",
+      "seed": 42
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.401016,
+      "val_loss": 0.355969,
+      "best_val_loss": 0.350727,
+      "lr": 0.001,
+      "time_sec": 8.62,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "AMZN",
+      "seed": 42
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.400244,
+      "val_loss": 0.354106,
+      "best_val_loss": 0.350727,
+      "lr": 0.001,
+      "time_sec": 8.35,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "AMZN",
+      "seed": 42
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.400613,
+      "val_loss": 0.351049,
+      "best_val_loss": 0.350727,
+      "lr": 0.001,
+      "time_sec": 8.41,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "AMZN",
+      "seed": 42
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.399692,
+      "val_loss": 0.35357,
+      "best_val_loss": 0.350727,
+      "lr": 0.0005,
+      "time_sec": 8.46,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "AMZN",
+      "seed": 42
+    }
+  ]
+}

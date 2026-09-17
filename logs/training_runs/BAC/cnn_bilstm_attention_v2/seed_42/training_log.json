@@ -1,0 +1,162 @@
+{
+  "train_loss": [
+    0.41428450059007715,
+    0.4031048411572421,
+    0.4023243319105219,
+    0.39856025135075607,
+    0.39880997406111823,
+    0.3980426956106115,
+    0.39769214513125245,
+    0.39676745997534857,
+    0.3969543891924399,
+    0.39697745508617827,
+    0.395654379107334
+  ],
+  "val_loss": [
+    0.31022336416774327,
+    0.2877975155909856,
+    0.2887265384197235,
+    0.2870023498932521,
+    0.2875850076476733,
+    0.29534560773107743,
+    0.29159359965059495,
+    0.28952987492084503,
+    0.2904398093620936,
+    0.287679233484798,
+    0.287369085682763
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.414285,
+      "val_loss": 0.310223,
+      "best_val_loss": 0.310223,
+      "lr": 0.001,
+      "time_sec": 8.14,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "BAC",
+      "seed": 42
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.403105,
+      "val_loss": 0.287798,
+      "best_val_loss": 0.287798,
+      "lr": 0.001,
+      "time_sec": 8.2,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "BAC",
+      "seed": 42
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.402324,
+      "val_loss": 0.288727,
+      "best_val_loss": 0.287798,
+      "lr": 0.001,
+      "time_sec": 8.13,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "BAC",
+      "seed": 42
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.39856,
+      "val_loss": 0.287002,
+      "best_val_loss": 0.287002,
+      "lr": 0.001,
+      "time_sec": 8.17,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "BAC",
+      "seed": 42
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.39881,
+      "val_loss": 0.287585,
+      "best_val_loss": 0.287002,
+      "lr": 0.001,
+      "time_sec": 8.41,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "BAC",
+      "seed": 42
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.398043,
+      "val_loss": 0.295346,
+      "best_val_loss": 0.287002,
+      "lr": 0.001,
+      "time_sec": 8.07,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "BAC",
+      "seed": 42
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.397692,
+      "val_loss": 0.291594,
+      "best_val_loss": 0.287002,
+      "lr": 0.001,
+      "time_sec": 8.42,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "BAC",
+      "seed": 42
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.396767,
+      "val_loss": 0.28953,
+      "best_val_loss": 0.287002,
+      "lr": 0.001,
+      "time_sec": 8.3,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "BAC",
+      "seed": 42
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.396954,
+      "val_loss": 0.29044,
+      "best_val_loss": 0.287002,
+      "lr": 0.001,
+      "time_sec": 8.17,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "BAC",
+      "seed": 42
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.396977,
+      "val_loss": 0.287679,
+      "best_val_loss": 0.287002,
+      "lr": 0.001,
+      "time_sec": 8.43,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "BAC",
+      "seed": 42
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.395654,
+      "val_loss": 0.287369,
+      "best_val_loss": 0.287002,
+      "lr": 0.0005,
+      "time_sec": 8.22,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "BAC",
+      "seed": 42
+    }
+  ]
+}

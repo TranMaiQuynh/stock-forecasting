@@ -1,0 +1,162 @@
+{
+  "train_loss": [
+    0.423894402274379,
+    0.4045671900113424,
+    0.4014704994581364,
+    0.3973558599198306,
+    0.3948327785288846,
+    0.3939179978988789,
+    0.3917521115806368,
+    0.39130193878103187,
+    0.3874104292304428,
+    0.3846729296225089,
+    0.3811005984191541
+  ],
+  "val_loss": [
+    0.8055712448226081,
+    0.805135233534707,
+    0.8103620509306589,
+    0.8008051580852933,
+    0.8012032839987013,
+    0.8025715119308896,
+    0.8059832784864638,
+    0.8077131377326118,
+    0.8150461282995012,
+    0.8143431213166978,
+    0.8183482388655344
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.423894,
+      "val_loss": 0.805571,
+      "best_val_loss": 0.805571,
+      "lr": 0.001,
+      "time_sec": 1.77,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "INTC",
+      "seed": 42
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.404567,
+      "val_loss": 0.805135,
+      "best_val_loss": 0.805135,
+      "lr": 0.001,
+      "time_sec": 1.78,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "INTC",
+      "seed": 42
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.40147,
+      "val_loss": 0.810362,
+      "best_val_loss": 0.805135,
+      "lr": 0.001,
+      "time_sec": 1.87,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "INTC",
+      "seed": 42
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.397356,
+      "val_loss": 0.800805,
+      "best_val_loss": 0.800805,
+      "lr": 0.001,
+      "time_sec": 1.72,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "INTC",
+      "seed": 42
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.394833,
+      "val_loss": 0.801203,
+      "best_val_loss": 0.800805,
+      "lr": 0.001,
+      "time_sec": 1.75,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "INTC",
+      "seed": 42
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.393918,
+      "val_loss": 0.802572,
+      "best_val_loss": 0.800805,
+      "lr": 0.001,
+      "time_sec": 1.87,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "INTC",
+      "seed": 42
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.391752,
+      "val_loss": 0.805983,
+      "best_val_loss": 0.800805,
+      "lr": 0.001,
+      "time_sec": 1.75,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "INTC",
+      "seed": 42
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.391302,
+      "val_loss": 0.807713,
+      "best_val_loss": 0.800805,
+      "lr": 0.001,
+      "time_sec": 1.88,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "INTC",
+      "seed": 42
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.38741,
+      "val_loss": 0.815046,
+      "best_val_loss": 0.800805,
+      "lr": 0.001,
+      "time_sec": 1.7,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "INTC",
+      "seed": 42
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.384673,
+      "val_loss": 0.814343,
+      "best_val_loss": 0.800805,
+      "lr": 0.001,
+      "time_sec": 1.75,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "INTC",
+      "seed": 42
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.381101,
+      "val_loss": 0.818348,
+      "best_val_loss": 0.800805,
+      "lr": 0.0005,
+      "time_sec": 1.7,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "INTC",
+      "seed": 42
+    }
+  ]
+}

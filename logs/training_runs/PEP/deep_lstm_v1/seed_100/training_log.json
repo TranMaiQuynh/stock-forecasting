@@ -1,0 +1,120 @@
+{
+  "train_loss": [
+    0.41836544462928066,
+    0.40312248170375825,
+    0.40083041908564393,
+    0.39878232070693265,
+    0.3983183338686272,
+    0.39526500646714813,
+    0.3960095438692305,
+    0.3947899914450116
+  ],
+  "val_loss": [
+    0.4464682224724028,
+    0.45029061535994214,
+    0.4465606419576539,
+    0.4540458992123604,
+    0.4564167633652687,
+    0.4503124455610911,
+    0.4497051669491662,
+    0.4510426190164354
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.418365,
+      "val_loss": 0.446468,
+      "best_val_loss": 0.446468,
+      "lr": 0.001,
+      "time_sec": 1.65,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "PEP",
+      "seed": 100
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.403122,
+      "val_loss": 0.450291,
+      "best_val_loss": 0.446468,
+      "lr": 0.001,
+      "time_sec": 1.6,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "PEP",
+      "seed": 100
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.40083,
+      "val_loss": 0.446561,
+      "best_val_loss": 0.446468,
+      "lr": 0.001,
+      "time_sec": 1.68,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "PEP",
+      "seed": 100
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.398782,
+      "val_loss": 0.454046,
+      "best_val_loss": 0.446468,
+      "lr": 0.001,
+      "time_sec": 1.82,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "PEP",
+      "seed": 100
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.398318,
+      "val_loss": 0.456417,
+      "best_val_loss": 0.446468,
+      "lr": 0.001,
+      "time_sec": 1.61,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "PEP",
+      "seed": 100
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.395265,
+      "val_loss": 0.450312,
+      "best_val_loss": 0.446468,
+      "lr": 0.001,
+      "time_sec": 1.65,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "PEP",
+      "seed": 100
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.39601,
+      "val_loss": 0.449705,
+      "best_val_loss": 0.446468,
+      "lr": 0.001,
+      "time_sec": 1.58,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "PEP",
+      "seed": 100
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.39479,
+      "val_loss": 0.451043,
+      "best_val_loss": 0.446468,
+      "lr": 0.0005,
+      "time_sec": 1.63,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "PEP",
+      "seed": 100
+    }
+  ]
+}

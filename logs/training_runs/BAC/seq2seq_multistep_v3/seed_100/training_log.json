@@ -1,0 +1,120 @@
+{
+  "train_loss": [
+    0.3987278726365831,
+    0.39564750547762273,
+    0.39532198596883705,
+    0.3955320183877592,
+    0.39926025205188326,
+    0.3960118099495217,
+    0.39690162351837865,
+    0.39519529188120806
+  ],
+  "val_loss": [
+    0.31288279965519905,
+    0.314553027972579,
+    0.31411419063806534,
+    0.31423870101571083,
+    0.3134450614452362,
+    0.313553374260664,
+    0.3135767746716738,
+    0.31323444098234177
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.398728,
+      "val_loss": 0.312883,
+      "best_val_loss": 0.312883,
+      "lr": 0.001,
+      "time_sec": 5.81,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "BAC",
+      "seed": 100
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.395648,
+      "val_loss": 0.314553,
+      "best_val_loss": 0.312883,
+      "lr": 0.001,
+      "time_sec": 5.84,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "BAC",
+      "seed": 100
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.395322,
+      "val_loss": 0.314114,
+      "best_val_loss": 0.312883,
+      "lr": 0.001,
+      "time_sec": 5.97,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "BAC",
+      "seed": 100
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.395532,
+      "val_loss": 0.314239,
+      "best_val_loss": 0.312883,
+      "lr": 0.001,
+      "time_sec": 5.86,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "BAC",
+      "seed": 100
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.39926,
+      "val_loss": 0.313445,
+      "best_val_loss": 0.312883,
+      "lr": 0.001,
+      "time_sec": 5.76,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "BAC",
+      "seed": 100
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.396012,
+      "val_loss": 0.313553,
+      "best_val_loss": 0.312883,
+      "lr": 0.001,
+      "time_sec": 6.04,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "BAC",
+      "seed": 100
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.396902,
+      "val_loss": 0.313577,
+      "best_val_loss": 0.312883,
+      "lr": 0.001,
+      "time_sec": 5.94,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "BAC",
+      "seed": 100
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.395195,
+      "val_loss": 0.313234,
+      "best_val_loss": 0.312883,
+      "lr": 0.0005,
+      "time_sec": 5.9,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "BAC",
+      "seed": 100
+    }
+  ]
+}

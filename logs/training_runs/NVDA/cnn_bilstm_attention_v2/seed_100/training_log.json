@@ -1,0 +1,148 @@
+{
+  "train_loss": [
+    0.43144473974351527,
+    0.4209118845286193,
+    0.4192726379191434,
+    0.4167363570796119,
+    0.4157465856384348,
+    0.41754040122032166,
+    0.41509752295635366,
+    0.4149383829699622,
+    0.4155476673885628,
+    0.4149931281805038
+  ],
+  "val_loss": [
+    0.5140123731560178,
+    0.5203689634799957,
+    0.5124366912576888,
+    0.5178129209412469,
+    0.5208109385437436,
+    0.5135288702117072,
+    0.513184991147783,
+    0.5230048894882202,
+    0.5157495141029358,
+    0.5160519977410635
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.431445,
+      "val_loss": 0.514012,
+      "best_val_loss": 0.514012,
+      "lr": 0.001,
+      "time_sec": 8.09,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "NVDA",
+      "seed": 100
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.420912,
+      "val_loss": 0.520369,
+      "best_val_loss": 0.514012,
+      "lr": 0.001,
+      "time_sec": 7.82,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "NVDA",
+      "seed": 100
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.419273,
+      "val_loss": 0.512437,
+      "best_val_loss": 0.512437,
+      "lr": 0.001,
+      "time_sec": 7.63,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "NVDA",
+      "seed": 100
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.416736,
+      "val_loss": 0.517813,
+      "best_val_loss": 0.512437,
+      "lr": 0.001,
+      "time_sec": 7.56,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "NVDA",
+      "seed": 100
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.415747,
+      "val_loss": 0.520811,
+      "best_val_loss": 0.512437,
+      "lr": 0.001,
+      "time_sec": 7.35,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "NVDA",
+      "seed": 100
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.41754,
+      "val_loss": 0.513529,
+      "best_val_loss": 0.512437,
+      "lr": 0.001,
+      "time_sec": 7.72,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "NVDA",
+      "seed": 100
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.415098,
+      "val_loss": 0.513185,
+      "best_val_loss": 0.512437,
+      "lr": 0.001,
+      "time_sec": 7.76,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "NVDA",
+      "seed": 100
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.414938,
+      "val_loss": 0.523005,
+      "best_val_loss": 0.512437,
+      "lr": 0.001,
+      "time_sec": 7.7,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "NVDA",
+      "seed": 100
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.415548,
+      "val_loss": 0.51575,
+      "best_val_loss": 0.512437,
+      "lr": 0.001,
+      "time_sec": 7.53,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "NVDA",
+      "seed": 100
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.414993,
+      "val_loss": 0.516052,
+      "best_val_loss": 0.512437,
+      "lr": 0.0005,
+      "time_sec": 7.52,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "NVDA",
+      "seed": 100
+    }
+  ]
+}

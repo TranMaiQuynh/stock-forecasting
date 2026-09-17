@@ -1,0 +1,162 @@
+{
+  "train_loss": [
+    0.41419533844347356,
+    0.40351525710688696,
+    0.4002365177428281,
+    0.39897282134603573,
+    0.3992970028409251,
+    0.3977042709235792,
+    0.39786839363751586,
+    0.39783034457100763,
+    0.39742331791807106,
+    0.3978264782163832,
+    0.3969422553424482
+  ],
+  "val_loss": [
+    0.5011311305893792,
+    0.5029352539115481,
+    0.5035990609063042,
+    0.4995375937885708,
+    0.5004876421557533,
+    0.5026294887065887,
+    0.5020913713508182,
+    0.5000840293036567,
+    0.5004181315501531,
+    0.49979522162013584,
+    0.49983764357037014
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.414195,
+      "val_loss": 0.501131,
+      "best_val_loss": 0.501131,
+      "lr": 0.001,
+      "time_sec": 11.09,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "NKE",
+      "seed": 100
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.403515,
+      "val_loss": 0.502935,
+      "best_val_loss": 0.501131,
+      "lr": 0.001,
+      "time_sec": 20.68,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "NKE",
+      "seed": 100
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.400237,
+      "val_loss": 0.503599,
+      "best_val_loss": 0.501131,
+      "lr": 0.001,
+      "time_sec": 25.8,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "NKE",
+      "seed": 100
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.398973,
+      "val_loss": 0.499538,
+      "best_val_loss": 0.499538,
+      "lr": 0.001,
+      "time_sec": 11.03,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "NKE",
+      "seed": 100
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.399297,
+      "val_loss": 0.500488,
+      "best_val_loss": 0.499538,
+      "lr": 0.001,
+      "time_sec": 9.19,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "NKE",
+      "seed": 100
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.397704,
+      "val_loss": 0.502629,
+      "best_val_loss": 0.499538,
+      "lr": 0.001,
+      "time_sec": 8.94,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "NKE",
+      "seed": 100
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.397868,
+      "val_loss": 0.502091,
+      "best_val_loss": 0.499538,
+      "lr": 0.001,
+      "time_sec": 9.43,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "NKE",
+      "seed": 100
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.39783,
+      "val_loss": 0.500084,
+      "best_val_loss": 0.499538,
+      "lr": 0.001,
+      "time_sec": 15.83,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "NKE",
+      "seed": 100
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.397423,
+      "val_loss": 0.500418,
+      "best_val_loss": 0.499538,
+      "lr": 0.001,
+      "time_sec": 10.34,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "NKE",
+      "seed": 100
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.397826,
+      "val_loss": 0.499795,
+      "best_val_loss": 0.499538,
+      "lr": 0.001,
+      "time_sec": 7.9,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "NKE",
+      "seed": 100
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.396942,
+      "val_loss": 0.499838,
+      "best_val_loss": 0.499538,
+      "lr": 0.0005,
+      "time_sec": 7.58,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "NKE",
+      "seed": 100
+    }
+  ]
+}

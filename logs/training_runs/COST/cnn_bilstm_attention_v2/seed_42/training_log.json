@@ -1,0 +1,120 @@
+{
+  "train_loss": [
+    0.4117953203342579,
+    0.40063812125612186,
+    0.399517489583404,
+    0.3981765349706014,
+    0.396368470898381,
+    0.39661963140522993,
+    0.39530682773501785,
+    0.3944185064898597
+  ],
+  "val_loss": [
+    0.43041375941700405,
+    0.43952713244491154,
+    0.4337504704793294,
+    0.4371802889638477,
+    0.43387431071864235,
+    0.43087557951609295,
+    0.4324990626838472,
+    0.4317041337490082
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.411795,
+      "val_loss": 0.430414,
+      "best_val_loss": 0.430414,
+      "lr": 0.001,
+      "time_sec": 7.98,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "COST",
+      "seed": 42
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.400638,
+      "val_loss": 0.439527,
+      "best_val_loss": 0.430414,
+      "lr": 0.001,
+      "time_sec": 7.93,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "COST",
+      "seed": 42
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.399517,
+      "val_loss": 0.43375,
+      "best_val_loss": 0.430414,
+      "lr": 0.001,
+      "time_sec": 7.88,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "COST",
+      "seed": 42
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.398177,
+      "val_loss": 0.43718,
+      "best_val_loss": 0.430414,
+      "lr": 0.001,
+      "time_sec": 8.19,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "COST",
+      "seed": 42
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.396368,
+      "val_loss": 0.433874,
+      "best_val_loss": 0.430414,
+      "lr": 0.001,
+      "time_sec": 7.77,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "COST",
+      "seed": 42
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.39662,
+      "val_loss": 0.430876,
+      "best_val_loss": 0.430414,
+      "lr": 0.001,
+      "time_sec": 7.69,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "COST",
+      "seed": 42
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.395307,
+      "val_loss": 0.432499,
+      "best_val_loss": 0.430414,
+      "lr": 0.001,
+      "time_sec": 7.66,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "COST",
+      "seed": 42
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.394419,
+      "val_loss": 0.431704,
+      "best_val_loss": 0.430414,
+      "lr": 0.0005,
+      "time_sec": 7.77,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "COST",
+      "seed": 42
+    }
+  ]
+}

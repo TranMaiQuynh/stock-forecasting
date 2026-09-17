@@ -1,0 +1,148 @@
+{
+  "train_loss": [
+    0.39834514723883735,
+    0.39628074323689494,
+    0.3935508187170382,
+    0.39334241692666655,
+    0.398841353699013,
+    0.39263628356986574,
+    0.39350707133611046,
+    0.3955411637270892,
+    0.3929002501346447,
+    0.39307288615791885
+  ],
+  "val_loss": [
+    0.37835229001939297,
+    0.37816666439175606,
+    0.37711027450859547,
+    0.3773631099611521,
+    0.3771383948624134,
+    0.37727407924830914,
+    0.37715682946145535,
+    0.3771357536315918,
+    0.37748271599411964,
+    0.37711387500166893
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.398345,
+      "val_loss": 0.378352,
+      "best_val_loss": 0.378352,
+      "lr": 0.001,
+      "time_sec": 8.01,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "JPM",
+      "seed": 42
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.396281,
+      "val_loss": 0.378167,
+      "best_val_loss": 0.378167,
+      "lr": 0.001,
+      "time_sec": 7.68,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "JPM",
+      "seed": 42
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.393551,
+      "val_loss": 0.37711,
+      "best_val_loss": 0.37711,
+      "lr": 0.001,
+      "time_sec": 9.0,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "JPM",
+      "seed": 42
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.393342,
+      "val_loss": 0.377363,
+      "best_val_loss": 0.37711,
+      "lr": 0.001,
+      "time_sec": 6.92,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "JPM",
+      "seed": 42
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.398841,
+      "val_loss": 0.377138,
+      "best_val_loss": 0.37711,
+      "lr": 0.001,
+      "time_sec": 6.85,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "JPM",
+      "seed": 42
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.392636,
+      "val_loss": 0.377274,
+      "best_val_loss": 0.37711,
+      "lr": 0.001,
+      "time_sec": 6.46,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "JPM",
+      "seed": 42
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.393507,
+      "val_loss": 0.377157,
+      "best_val_loss": 0.37711,
+      "lr": 0.001,
+      "time_sec": 5.97,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "JPM",
+      "seed": 42
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.395541,
+      "val_loss": 0.377136,
+      "best_val_loss": 0.37711,
+      "lr": 0.001,
+      "time_sec": 6.32,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "JPM",
+      "seed": 42
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.3929,
+      "val_loss": 0.377483,
+      "best_val_loss": 0.37711,
+      "lr": 0.001,
+      "time_sec": 6.46,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "JPM",
+      "seed": 42
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.393073,
+      "val_loss": 0.377114,
+      "best_val_loss": 0.37711,
+      "lr": 0.0005,
+      "time_sec": 6.38,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "JPM",
+      "seed": 42
+    }
+  ]
+}

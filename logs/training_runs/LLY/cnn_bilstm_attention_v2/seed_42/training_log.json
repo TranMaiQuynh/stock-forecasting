@@ -1,0 +1,148 @@
+{
+  "train_loss": [
+    0.41463724496187987,
+    0.40658801904431097,
+    0.40585214374242007,
+    0.4030110206868913,
+    0.4016803777880139,
+    0.4015874354927628,
+    0.40134097900655535,
+    0.4014570596041503,
+    0.40051487507643524,
+    0.3998340794333705
+  ],
+  "val_loss": [
+    0.6249734212954839,
+    0.6275587446159787,
+    0.6248269064558877,
+    0.6271363347768784,
+    0.6334712223874198,
+    0.631482450498475,
+    0.6275199436479144,
+    0.6296090914143456,
+    0.6289137270715501,
+    0.6264092806312773
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.414637,
+      "val_loss": 0.624973,
+      "best_val_loss": 0.624973,
+      "lr": 0.001,
+      "time_sec": 7.84,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "LLY",
+      "seed": 42
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.406588,
+      "val_loss": 0.627559,
+      "best_val_loss": 0.624973,
+      "lr": 0.001,
+      "time_sec": 8.43,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "LLY",
+      "seed": 42
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.405852,
+      "val_loss": 0.624827,
+      "best_val_loss": 0.624827,
+      "lr": 0.001,
+      "time_sec": 7.74,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "LLY",
+      "seed": 42
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.403011,
+      "val_loss": 0.627136,
+      "best_val_loss": 0.624827,
+      "lr": 0.001,
+      "time_sec": 7.78,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "LLY",
+      "seed": 42
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.40168,
+      "val_loss": 0.633471,
+      "best_val_loss": 0.624827,
+      "lr": 0.001,
+      "time_sec": 7.82,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "LLY",
+      "seed": 42
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.401587,
+      "val_loss": 0.631482,
+      "best_val_loss": 0.624827,
+      "lr": 0.001,
+      "time_sec": 7.67,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "LLY",
+      "seed": 42
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.401341,
+      "val_loss": 0.62752,
+      "best_val_loss": 0.624827,
+      "lr": 0.001,
+      "time_sec": 7.75,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "LLY",
+      "seed": 42
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.401457,
+      "val_loss": 0.629609,
+      "best_val_loss": 0.624827,
+      "lr": 0.001,
+      "time_sec": 7.69,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "LLY",
+      "seed": 42
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.400515,
+      "val_loss": 0.628914,
+      "best_val_loss": 0.624827,
+      "lr": 0.001,
+      "time_sec": 7.69,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "LLY",
+      "seed": 42
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.399834,
+      "val_loss": 0.626409,
+      "best_val_loss": 0.624827,
+      "lr": 0.0005,
+      "time_sec": 8.16,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "LLY",
+      "seed": 42
+    }
+  ]
+}

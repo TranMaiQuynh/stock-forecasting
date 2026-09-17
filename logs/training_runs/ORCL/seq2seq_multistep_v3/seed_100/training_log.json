@@ -1,0 +1,120 @@
+{
+  "train_loss": [
+    0.3949669813668286,
+    0.38988386514010254,
+    0.3907640101733031,
+    0.39162994314123084,
+    0.39394451710912914,
+    0.39059924726132994,
+    0.3913837099516833,
+    0.39335861095675717
+  ],
+  "val_loss": [
+    0.7499275170266628,
+    0.7508931681513786,
+    0.7502745501697063,
+    0.7500841580331326,
+    0.7501667328178883,
+    0.7500233091413975,
+    0.7500273995101452,
+    0.7502137683331966
+  ],
+  "epoch_logs": [
+    {
+      "epoch": 1,
+      "train_loss": 0.394967,
+      "val_loss": 0.749928,
+      "best_val_loss": 0.749928,
+      "lr": 0.001,
+      "time_sec": 6.32,
+      "is_best": true,
+      "patience": 0,
+      "ticker": "ORCL",
+      "seed": 100
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.389884,
+      "val_loss": 0.750893,
+      "best_val_loss": 0.749928,
+      "lr": 0.001,
+      "time_sec": 6.88,
+      "is_best": false,
+      "patience": 1,
+      "ticker": "ORCL",
+      "seed": 100
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.390764,
+      "val_loss": 0.750275,
+      "best_val_loss": 0.749928,
+      "lr": 0.001,
+      "time_sec": 6.49,
+      "is_best": false,
+      "patience": 2,
+      "ticker": "ORCL",
+      "seed": 100
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.39163,
+      "val_loss": 0.750084,
+      "best_val_loss": 0.749928,
+      "lr": 0.001,
+      "time_sec": 6.32,
+      "is_best": false,
+      "patience": 3,
+      "ticker": "ORCL",
+      "seed": 100
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.393945,
+      "val_loss": 0.750167,
+      "best_val_loss": 0.749928,
+      "lr": 0.001,
+      "time_sec": 6.28,
+      "is_best": false,
+      "patience": 4,
+      "ticker": "ORCL",
+      "seed": 100
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.390599,
+      "val_loss": 0.750023,
+      "best_val_loss": 0.749928,
+      "lr": 0.001,
+      "time_sec": 6.45,
+      "is_best": false,
+      "patience": 5,
+      "ticker": "ORCL",
+      "seed": 100
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.391384,
+      "val_loss": 0.750027,
+      "best_val_loss": 0.749928,
+      "lr": 0.001,
+      "time_sec": 6.22,
+      "is_best": false,
+      "patience": 6,
+      "ticker": "ORCL",
+      "seed": 100
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.393359,
+      "val_loss": 0.750214,
+      "best_val_loss": 0.749928,
+      "lr": 0.0005,
+      "time_sec": 6.1,
+      "is_best": false,
+      "patience": 7,
+      "ticker": "ORCL",
+      "seed": 100
+    }
+  ]
+}
