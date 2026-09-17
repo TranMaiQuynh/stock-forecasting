@@ -81,7 +81,7 @@ def create_demo_notebook():
                     "end_date = '2024-12-31'\n",
                     "\n",
                     "print(f\"[Data] Đang tải dữ liệu {ticker} từ Yahoo Finance ({start_date} -> {end_date})...\")\n",
-                    "df_raw = yf.download(ticker, start=start_date, end=end_date, progress=False)\n",
+                    "df_raw = yf.download(ticker, start=start_date, end=end_date, progress=False, auto_adjust=True)\n",
                     "if isinstance(df_raw.columns, pd.MultiIndex):\n",
                     "    df_raw.columns = df_raw.columns.get_level_values(0)\n",
                     "df_raw.reset_index(inplace=True)\n",
@@ -561,7 +561,7 @@ def create_demo_notebook():
                 "outputs": [],
                 "source": [
                     "print(f\"[Live Inference] Đang tải dữ liệu thời gian thực {ticker} từ Yahoo Finance...\")\n",
-                    "df_live = yf.download(ticker, period='6mo', progress=False)\n",
+                    "df_live = yf.download(ticker, period='6mo', progress=False, auto_adjust=True)\n",
                     "if isinstance(df_live.columns, pd.MultiIndex):\n",
                     "    df_live.columns = df_live.columns.get_level_values(0)\n",
                     "df_live.reset_index(inplace=True)\n",
