@@ -48,7 +48,7 @@ def download_yahoo_data(ticker: str, start_date: str, end_date: str, cache_dir: 
             return df_slice
 
     print(f"[Data] Đang tải dữ liệu {ticker} từ Yahoo Finance ({start_date} đến {end_date})...")
-    df = yf.download(ticker, start=start_date, end=end_date, progress=False)
+    df = yf.download(ticker, start=start_date, end=end_date, progress=False, auto_adjust=True)
     
     # Xử lý MultiIndex columns nếu yfinance trả về dạng MultiIndex
     if isinstance(df.columns, pd.MultiIndex):
@@ -123,19 +123,40 @@ def calculate_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def clip_outliers(df: pd.DataFrame, feature_cols: list,
-                  lower_pct: float = 0.01, upper_pct: float = 0.99) -> pd.DataFrame:
+def clip_outliers(df: pd.DataFrame, feature_cols: list, target_col: str = None,
+                  lower_pct: float = 0.01, upper_pct: float = 0.99) -> tuple:
     """
     [v2-FIX] Winsorization: Cắt giá trị cực trị tại ngưỡng 1% và 99% phân vị.
     Phân vị ĐƯỢC TÍNH CHỈ TRÊN TẬP TRAIN để tránh data leakage.
     Không áp dụng cho cột Volume (đột biến khối lượng là tín hiệu quan trọng).
+    Không áp dụng cho target_col — scaler phải thấy phân phối thật của target.
+
+    Returns:
+        (df_clipped, bounds_dict): bounds_dict lưu {col: (lower, upper)} để
+        apply_clip_bounds() áp lên val/test với CÙNG ngưỡng từ train.
     """
     df = df.copy()
     skip_cols = {'Volume'}  # Giữ nguyên Volume spike (tín hiệu dòng tiền quan trọng)
+    if target_col:
+        skip_cols.add(target_col)  # Target không bị clip — scaler phải thấy phân phối thật
+    bounds = {}
     for col in feature_cols:
         if col in df.columns and col not in skip_cols:
             lower_bound = df[col].quantile(lower_pct)
             upper_bound = df[col].quantile(upper_pct)
+            bounds[col] = (lower_bound, upper_bound)
+            df[col] = df[col].clip(lower=lower_bound, upper=upper_bound)
+    return df, bounds
+
+
+def apply_clip_bounds(df: pd.DataFrame, bounds: dict) -> pd.DataFrame:
+    """
+    Áp dụng bounds Winsorization (đã tính từ tập Train) lên val/test.
+    Không tính lại quantile — đảm bảo Zero Data Leakage.
+    """
+    df = df.copy()
+    for col, (lower_bound, upper_bound) in bounds.items():
+        if col in df.columns:
             df[col] = df[col].clip(lower=lower_bound, upper=upper_bound)
     return df
 
@@ -251,6 +272,19 @@ def prepare_dataset_pipeline(config: dict, version: str = "v0"):
     n_total = len(processed_df)
     n_train = int(n_total * cfg_split['train_ratio'])
     n_val   = int(n_total * cfg_split['val_ratio'])
+    # test_df = phần còn lại — test_ratio trong config chỉ mang tính tài liệu, không điều khiển logic
+    n_test  = n_total - n_train - n_val
+
+    # Kiểm tra tập test đủ lớn cho cả nhánh multi-step (input_window + max_horizon)
+    cfg_win = config.get('window', {})
+    max_horizon = max(cfg_win.get('forecast_horizon', 1), cfg_win.get('multi_step_horizon', 1))
+    min_test_rows = cfg_win.get('input_window', 60) + max_horizon
+    if n_test < min_test_rows:
+        raise ValueError(
+            f"Tập test chỉ có {n_test} dòng, cần ít nhất {min_test_rows} "
+            f"(input_window={cfg_win.get('input_window', 60)} + max_horizon={max_horizon}). "
+            f"Kiểm tra lại train_ratio/val_ratio trong config."
+        )
 
     train_df = processed_df.iloc[:n_train].copy()
     val_df   = processed_df.iloc[n_train:n_train + n_val].copy()
@@ -258,11 +292,15 @@ def prepare_dataset_pipeline(config: dict, version: str = "v0"):
 
     print(f"[Pipeline] Phân chia dữ liệu: Train={len(train_df)} | Val={len(val_df)} | Test={len(test_df)} | Tổng={n_total}")
 
-    # [v2-FIX] Winsorization: cắt outlier dựa trên phân vị của tập Train
+    # [v2-FIX] Winsorization: bounds tính từ Train, áp đồng nhất lên cả 3 tập
+    # target_col được loại khỏi clipping — scaler phải thấy phân phối thật
     if version != "v0":  # v0 có ít cột, OHLCV thường không cần Winsorize
+        target_col_for_clip = cfg_data.get('target_col')
         all_cols = list(processed_df.columns)
-        train_df = clip_outliers(train_df, all_cols)
-        print(f"[Pipeline][v2] Winsorization hoàn tất trên tập Train (ngưỡng [1%, 99%])")
+        train_df, clip_bounds = clip_outliers(train_df, all_cols, target_col=target_col_for_clip)
+        val_df  = apply_clip_bounds(val_df,  clip_bounds)
+        test_df = apply_clip_bounds(test_df, clip_bounds)
+        print(f"[Pipeline][v2] Winsorization hoàn tất: bounds từ Train → áp lên Val + Test (ngưỡng [1%, 99%])")
 
     # [v2-FIX] Chọn lọc đặc trưng trực giao (giảm đa cộng tuyến)
     if version in ["v1", "v2", "v3"]:
