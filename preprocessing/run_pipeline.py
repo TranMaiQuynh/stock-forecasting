@@ -119,6 +119,14 @@ def calculate_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df['Log_Return'] = np.log(df['Close'] / df['Close'].shift(1))
     df['Hist_Volatility_20'] = df['Log_Return'].rolling(window=20).std() * np.sqrt(252)
 
+    # 6. Price-structure features (stationary — tỷ lệ, không phụ thuộc mức giá tuyệt đối)
+    # Đây là bộ feature thay thế OHLC thô: bất kể giá là $40 hay $400, các tỷ lệ này
+    # luôn dao động trong khoảng ổn định → không gây out-of-distribution khi Test > Train range.
+    df['Open_Return']    = df['Open'] / df['Close'].shift(1) - 1   # Overnight gap (gap qua đêm)
+    df['High_Ratio']     = df['High'] / df['Close'] - 1            # Upper wick ratio (>= 0)
+    df['Low_Ratio']      = df['Low']  / df['Close'] - 1            # Lower wick ratio (<= 0)
+    df['MACD_Hist_norm'] = df['MACD_Hist'] / df['Close']            # MACD/Close: đơn vị % thay vì USD
+
     df.dropna(inplace=True)
     return df
 
@@ -163,39 +171,44 @@ def apply_clip_bounds(df: pd.DataFrame, bounds: dict) -> pd.DataFrame:
 
 def select_orthogonal_features(df: pd.DataFrame) -> list:
     """
-    [v2-FIX] Chọn lọc đặc trưng trực giao — giảm đa cộng tuyến.
-    Thay vì dùng tất cả 27+ cột (SMA5, SMA10, SMA20... gần giống nhau),
-    chỉ chọn 1 đại diện cho mỗi nhóm tín hiệu:
-    - Trend: MACD_Hist
-    - Momentum: RSI_14
-    - Volatility: ATR_norm (= ATR_14 / Close)
-    - Volume: Volume_Ratio
-    - Return: Log_Return
-    - Macro: Delta_VIX, Macro_TNX
+    Chọn lọc đặc trưng trực giao — giảm đa cộng tuyến, đảm bảo tính dừng (stationarity).
 
-    LƯU Ý: Các cột dẫn xuất (ATR_norm, Delta_VIX) phải được tạo trên
-    processed_df TRƯỚC khi chia train/val/test (trong prepare_dataset_pipeline).
-    Hàm này chỉ CHỌN, KHÔNG TẠO cột mới.
+    Tất cả features đều là tỷ lệ/delta — không có đơn vị USD tuyệt đối:
+    - Price structure : Log_Return, Open_Return, High_Ratio, Low_Ratio (tỷ lệ so Close)
+    - Volume          : Volume_Ratio (Volume / SMA20Volume)
+    - Trend           : MACD_Hist_norm (MACD_Hist / Close → đơn vị %)
+    - Momentum        : RSI_14 (bounded [0, 100])
+    - Volatility      : ATR_norm (ATR_14 / Close → đơn vị %)
+    - Macro           : Delta_VIX, Delta_TNX (first-difference → stationary)
+
+    LƯU Ý: Hàm này chỉ CHỌN, KHÔNG TẠO cột mới.
+    Các cột dẫn xuất phải được tạo trước trong prepare_dataset_pipeline().
     """
-    # Bộ đặc trưng cốt lõi (luôn có trong mọi phiên bản)
-    core = ['Open', 'High', 'Low', 'Close', 'Volume']
-
-    # Một đại diện cho mỗi nhóm kỹ thuật (ưu tiên theo thứ tự)
-    tech_candidates = [
-        'MACD_Hist',    # Trend
-        'RSI_14',       # Momentum
-        'ATR_norm',     # Volatility (normalized)
-        'Volume_Ratio', # Volume flow
-        'Log_Return',   # Return (stationary)
+    # Core: 5 stationary price-structure + volume features (thay thế OHLCV thô)
+    core = [
+        'Log_Return',    # ln(Close_t/Close_{t-1}) — return đóng cửa
+        'Open_Return',   # Open_t/Close_{t-1} - 1  — overnight gap
+        'High_Ratio',    # High_t/Close_t - 1       — upper wick (>= 0)
+        'Low_Ratio',     # Low_t/Close_t - 1        — lower wick (<= 0)
+        'Volume_Ratio',  # Volume / SMA20Volume     — volume deviation
     ]
-    macro_candidates = ['Delta_VIX', 'Macro_TNX']
 
-    selected = list(core)
+    # 1 đại diện cho mỗi nhóm kỹ thuật (đã stationary)
+    tech_candidates = [
+        'MACD_Hist_norm',  # Trend: MACD_Hist / Close → đơn vị %, không phụ thuộc mức giá
+        'RSI_14',          # Momentum: bounded [0, 100]
+        'ATR_norm',        # Volatility: ATR_14 / Close → đơn vị %
+    ]
+
+    # Macro: first-difference (Delta) thay vì mức tuyệt đối
+    macro_candidates = ['Delta_VIX', 'Delta_TNX']
+
+    selected = [c for c in core if c in df.columns]
     for col in tech_candidates + macro_candidates:
         if col in df.columns:
             selected.append(col)
 
-    print(f"[Feature] Lọc trực giao: {len(selected)} đặc trưng được giữ lại ← [{', '.join(selected)}]")
+    print(f"[Feature] Lọc trực giao: {len(selected)} đặc trưng stationary ← [{', '.join(selected)}]")
     return selected
 
 
@@ -243,8 +256,12 @@ def prepare_dataset_pipeline(config: dict, version: str = "v0"):
     )
 
     if version == "v0":
-        print(f"\n[Pipeline] Đang chuẩn bị dữ liệu cho phiên bản v0 (Vanilla - OHLCV cơ bản)...")
-        processed_df = raw_df[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
+        print(f"\n[Pipeline] Đang chuẩn bị dữ liệu cho phiên bản v0 (Stationary OHLCV ratios)...")
+        # Gọi calculate_technical_indicators để có Open_Return, High_Ratio, Low_Ratio,
+        # Volume_Ratio, Log_Return — tất cả đều stationary, không phụ thuộc mức giá tuyệt đối.
+        # v0 vẫn là "ablation dùng thông tin OHLCV" nhưng biểu diễn dạng tỷ lệ đúng chuẩn DL.
+        # Macro data KHÔNG được tải ở đây — đặc điểm phân biệt v0 vs v1/v2/v3.
+        processed_df = calculate_technical_indicators(raw_df)
     else:
         print(f"\n[Pipeline] Đang chuẩn bị dữ liệu cho phiên bản {version} (Feature Engineering + Macro)...")
         df_ti = calculate_technical_indicators(raw_df)
@@ -253,20 +270,24 @@ def prepare_dataset_pipeline(config: dict, version: str = "v0"):
             df_ti, macro_tickers, cfg_data['start_date'], cfg_data['end_date'], cfg_data['cache_dir']
         )
 
-    # [v2-FIX] Tạo các cột dẫn xuất TRÊN processed_df TRƯỚC KHI chia train/val/test
-    # Để đảm bảo val_df và test_df cũng có các cột này
+    # Tạo các cột dẫn xuất TRÊN processed_df TRƯỚC KHI chia train/val/test
+    # (ATR_norm, Delta_VIX, Delta_TNX cần được tính trên toàn bộ chuỗi để val/test cũng có)
     if 'ATR_14' in processed_df.columns:
         processed_df['ATR_norm'] = processed_df['ATR_14'] / processed_df['Close']
     if 'Macro_VIX' in processed_df.columns:
         processed_df['Delta_VIX'] = processed_df['Macro_VIX'].diff().fillna(0)
+    if 'Macro_TNX' in processed_df.columns:
+        # Delta_TNX = first difference của lợi suất trái phiếu — stationary, thay Macro_TNX tuyệt đối
+        processed_df['Delta_TNX'] = processed_df['Macro_TNX'].diff().fillna(0)
 
-    # [v2-FIX] Thêm cột Log_Return vào processed_df
-    if use_log_return and 'Close' in processed_df.columns:
+    # Log_Return đã được tính sẵn trong calculate_technical_indicators() cho cả v0 lẫn v1+.
+    # Khối này chỉ còn là safety-net cho trường hợp processed_df không qua calculate_technical_indicators.
+    if use_log_return and 'Log_Return' not in processed_df.columns and 'Close' in processed_df.columns:
         processed_df['Log_Return'] = np.log(
             processed_df['Close'] / processed_df['Close'].shift(1)
         )
         processed_df.dropna(inplace=True)
-        print(f"[Pipeline][v2] Đã tính cột Log_Return = ln(P_t / P_{{t-1}})")
+        print(f"[Pipeline] Đã tính cột Log_Return = ln(P_t / P_{{t-1}}) (fallback)")
 
     # 2. Phân chia Train/Val/Test theo thứ tự thời gian (Không rò rỉ)
     n_total = len(processed_df)
@@ -314,9 +335,15 @@ def prepare_dataset_pipeline(config: dict, version: str = "v0"):
     if version in ["v1", "v2", "v3"]:
         feature_cols = select_orthogonal_features(train_feat_df)
     else:
-        # v0: giữ OHLCV + Log_Return (nếu có)
-        feature_cols = [c for c in ['Open', 'High', 'Low', 'Close', 'Volume', 'Log_Return']
-                        if c in processed_df.columns]
+        # v0: dùng bộ stationary price-structure features (5 cột)
+        # Không dùng MACD, RSI, macro — giữ đặc trưng ablation study chỉ từ OHLCV
+        feature_cols = [c for c in [
+            'Log_Return',    # Return đóng cửa
+            'Open_Return',   # Overnight gap
+            'High_Ratio',    # Upper wick ratio
+            'Low_Ratio',     # Lower wick ratio
+            'Volume_Ratio',  # Volume deviation
+        ] if c in processed_df.columns]
 
     print(f"[Pipeline] Số lượng đặc trưng đầu vào (Input Features): {len(feature_cols)}")
 

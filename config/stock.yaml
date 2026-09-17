@@ -1,7 +1,8 @@
 # 1. Cấu hình Dữ liệu (Yahoo Finance)
 data:
   ticker: "AAPL"                     # Mã cổ phiếu mặc định (Apple)
-  benchmark_ticker: "^GSPC"          # S&P 500 để so sánh hiệu quả đầu tư
+  benchmark_ticker: "^GSPC"          # DOCUMENTATION ONLY — không được tải trong code;
+                                       # Benchmark_Return% trong backtest = Buy&Hold trên chính ticker đang test (không phải ^GSPC)
 
   # Danh sách các mã cổ phiếu sẽ được train (Multi-Ticker Experiment)
   training_tickers:
@@ -68,7 +69,8 @@ split:
 # v2: Proposed SOTA (CNN-BiLSTM-MultiHead-Attention)
 # v3: Multi-step Seq2Seq with Attention
 model:
-  active_version: "v0"               # Phiên bản đang chạy: "baseline", "v0", "v1", "v2", "v3"
+  active_version: "v0"               # DOCUMENTATION ONLY — không được đọc trong code;
+                                     # version được truyền qua CLI argument --version
   
   # Cấu hình kiến trúc
   # Giảm 80% tham số — 1170 mẫu train không đủ cho model cũ (~250k params)

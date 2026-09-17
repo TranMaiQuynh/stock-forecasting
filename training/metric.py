@@ -28,6 +28,12 @@ def compute_directional_accuracy(y_true: np.ndarray, y_pred: np.ndarray, y_prev:
       DA = Sum(sign(y_true) == sign(y_pred)) / N * 100%
     - Nếu is_log_return=False: so sánh với y_prev (giá phiên trước)
       DA = Sum(sign(y_true - y_prev) == sign(y_pred - y_prev)) / N * 100%
+
+    LƯU Ý: y_true/y_pred PHẢI ở raw scale (đã inverse_transform nếu dùng target_scaler).
+    Truyền giá trị đã StandardScaler-transform sẽ cho kết quả sai khi scaler.mean_ != 0
+    (xem training/loss.py DirectionalPenaltyLoss để biết chi tiết).
+    Hàm này hiện là dead code trong pipeline thực tế — cli/evaluate.py dùng
+    calculate_directional_accuracy_detailed() trong evaluation/stock_metric.py.
     """
     if is_log_return or y_prev is None:
         true_dir = np.sign(y_true)

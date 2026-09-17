@@ -111,6 +111,7 @@ def train_single_model(
         model_name=f"{model_name}_{version}",
         ticker=ticker,
         seed=seed,
+        target_scaler=data_bundle['target_scaler'],  # Cần để tính zero_point cho DirectionalPenaltyLoss
     )
     trainer.fit(train_loader, val_loader)
 

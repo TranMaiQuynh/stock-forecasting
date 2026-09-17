@@ -35,9 +35,7 @@ class VanillaCNN1D(nn.Module):
 
 
 class TemporalCNN1D(nn.Module):
-    """
-    Version 1 (v1): Deep Temporal CNN với nhiều block tích chập và dilated convolutions.
-    """
+    """Version 1 (v1): Deep Temporal CNN với 2 block tích chập (Conv1D → BatchNorm → ReLU → Dropout)."""
     def __init__(self, input_dim: int, num_filters: int = 64, kernel_size: int = 3, dropout: float = 0.2, output_dim: int = 1):
         super().__init__()
         self.conv1 = nn.Conv1d(input_dim, num_filters, kernel_size=kernel_size, padding=kernel_size // 2)

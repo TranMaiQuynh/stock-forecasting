@@ -50,19 +50,25 @@ def run_live_inference(config_path: str = "config/stock.yaml", model_name: str =
         cache_dir=cfg_data['cache_dir']
     )
     
+    # Nhánh v0 cũng gọi calculate_technical_indicators (giống run_pipeline.py) để có
+    # Open_Return, High_Ratio, Low_Ratio, Volume_Ratio, Log_Return — cùng feature_cols với training.
     if version == "v0":
-        processed_df = raw_df[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
+        processed_df = calculate_technical_indicators(raw_df)
     else:
         df_ti = calculate_technical_indicators(raw_df)
         macro_tickers = cfg_data.get('macro_tickers', [])
         processed_df = merge_macro_data(df_ti, macro_tickers, "2024-01-01", "2026-12-31", cfg_data['cache_dir'])
 
+    # Tạo cột dẫn xuất — PHẢI ĐỒNG BỘ với prepare_dataset_pipeline() trong run_pipeline.py.
+    # Nếu thiếu bất kỳ cột nào trong feature_cols, feature_scaler.transform() sẽ KeyError.
     if 'ATR_14' in processed_df.columns and 'Close' in processed_df.columns:
         processed_df['ATR_norm'] = processed_df['ATR_14'] / processed_df['Close']
     if 'Macro_VIX' in processed_df.columns:
         processed_df['Delta_VIX'] = processed_df['Macro_VIX'].diff().fillna(0)
-    if 'Close' in processed_df.columns:
-        processed_df['Log_Return'] = np.log(processed_df['Close'] / processed_df['Close'].shift(1))
+    if 'Macro_TNX' in processed_df.columns:
+        processed_df['Delta_TNX'] = processed_df['Macro_TNX'].diff().fillna(0)
+    # Open_Return / High_Ratio / Low_Ratio / MACD_Hist_norm / Log_Return đã được tính
+    # trong calculate_technical_indicators() — không cần tính lại ở đây.
     processed_df.dropna(inplace=True)
         
     recent_features = processed_df.iloc[-window_size:][feature_cols].values

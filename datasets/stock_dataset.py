@@ -142,9 +142,8 @@ def build_dataloaders(data_bundle: dict, input_window: int = 60, forecast_horizo
     - n_augmented     : Số bản sao (default=2 → tổng gấp 3×)
     Note: Augmentation chỉ áp dụng trên tập Train, Val/Test giữ nguyên.
     """
-    # Xác định index cột Close trong feature_cols
     feature_cols = data_bundle.get('feature_cols', [])
-    close_idx = feature_cols.index('Close') if 'Close' in feature_cols else 3
+    # close_idx đã được xóa: Close không còn trong feature_cols sau khi stationary fix.
     
     train_dataset = StockTimeSeriesDataset(
         features=data_bundle['train_features'],
