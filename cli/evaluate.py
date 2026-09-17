@@ -276,7 +276,7 @@ def evaluate_single_ticker_models(
     return df_summary, summary_rows
 
 
-def evaluate_all(
+def evaluate_all_models(
     config_path: str = "config/stock.yaml",
     target_ticker: str = "AAPL",
     target_seed: int = 42,
@@ -323,7 +323,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str, default="output")
     args = parser.parse_args()
     
-    evaluate_all(
+    evaluate_all_models(
         config_path=args.config,
         target_ticker=args.ticker,
         target_seed=args.seed,
