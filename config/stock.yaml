@@ -1,21 +1,31 @@
-# ==============================================================================
-# STOCK FORECASTING CONFIGURATION
-# Tuân thủ chuẩn Yahoo Finance (yfinance) & Nghiên cứu khoa học phân tầng phiên bản
-# ==============================================================================
-
 # 1. Cấu hình Dữ liệu (Yahoo Finance)
 data:
   ticker: "AAPL"                     # Mã cổ phiếu mặc định (Apple)
   benchmark_ticker: "^GSPC"          # S&P 500 để so sánh hiệu quả đầu tư
 
   # Danh sách các mã cổ phiếu sẽ được train (Multi-Ticker Experiment)
-  # AAPL: Ổn định, xu hướng tăng trưởng dài hạn rõ ràng
-  # TSLA: Biến động cực mạnh, kiểm tra khả năng xử lý noise cao của mô hình
-  # MSFT: Tương quan cao với AAPL nhưng ít biến động hơn — bộ so sánh đa dạng
   training_tickers:
     - "AAPL"
     - "TSLA"
     - "MSFT"
+    - "AMZN"
+    - "NVDA"
+    - "GOOGL"
+    - "ORCL" 
+    - "IBM"
+    - "INTC"
+    - "META"
+    - "JPM"
+    - "BAC"
+    - "MA"
+    - "MCD"
+    - "NKE"
+    - "KO"
+    - "PEP"
+    - "COST"
+    - "LLY"
+    - "JNJ"
+    - "ABBV"
 
   # Danh sách seeds để chạy multi-seed experiment (đảm bảo tính ổn định của thuật toán)
   training_seeds:
@@ -25,12 +35,11 @@ data:
   macro_tickers:                     # Các chỉ số vĩ mô trên Yahoo Finance để mô hình có "ngữ cảnh" thị trường
     - "^VIX"                         # Chỉ số biến động (Chỉ số sợ hãi). VIX cao thường đi kèm thị trường giảm.
     - "^TNX"                         # Lợi suất trái phiếu chính phủ Mỹ kỳ hạn 10 năm. Lãi suất tăng thường gây áp lực lên cổ phiếu công nghệ như AAPL.
-  start_date: "2018-01-01"           # Ngày bắt đầu lấy dữ liệu
-  end_date: "2024-12-31"             # Ngày kết thúc
-  cache_dir: "data"                  # Thư mục lưu cache dữ liệu tải về
-  target_col: "Log_Return"           # [v2] Dự báo Log-Return thay giá tuyệt đối → triệt tiêu phi dừng & Lag Fallacy
-                                     # Để phục hồi hành vi cũ: đổi lại thành "Close" và use_log_return: false
-  use_log_return: true               # [v2] true = tính cột Log_Return = ln(P_t/P_{t-1}) và dùng làm target
+  start_date: "2018-01-01"           
+  end_date: "2026-12-31"            
+  cache_dir: "data"                 
+  target_col: "Log_Return"                                    
+  use_log_return: true
 
   # [v2-FIX] Jittering Augmentation — Tăng cường dữ liệu chuỗi thời gian
   use_augmentation: true             # Bật Jittering: thêm nhiễu Gauss vi mô vào tập Train
@@ -83,11 +92,11 @@ model:
     hidden_dim: 32                   # [v2-FIX] Giảm 64→32
     dropout: 0.35                    # [v2-FIX] Tăng 0.2→0.35
 
-# 5. Cấu hình Huấn Luyện (Training)
+# 5. Cấu hình Huấn Luyện 
 training:
-  batch_size: 32                   # Kích thước batch
-  epochs: 100                      # Số epoch huấn luyện tối đa (EarlyStopping sẽ dừng sớm)
-  learning_rate: 0.001             # Tốc độ học ban đầu (ReduceLROnPlateau sẽ tự giảm)
+  batch_size: 32
+  epochs: 100                     
+  learning_rate: 0.001             
   weight_decay: 0.001              # [v2-FIX] Tăng 0.0001→0.001: phạt L2 mạnh gấp 10× để kiềm chế weights lớn
   loss_type: "directional"          # [v2-FIX] Kích hoạt DirectionalPenaltyLoss: phạt NẶNG khi đoán sai chiều xu hướng
                                     # Loss = Huber(ŷ,y) + 0.5 × max(0, −sign(y−y_prev)×(ŷ−y_prev))
@@ -96,7 +105,7 @@ training:
   directional_penalty_weight: 0.5   # Hệ số phạt chiều hướng (0.5 = cân bằng Huber và hướng)
   early_stopping_patience: 7        # [v2-FIX] Siết chặt 15→7: dừng sớm hơn, tránh overfit sau Best Epoch
   checkpoint_dir: "checkpoints"
-  device: "auto"                     # "cuda", "cpu", hoặc "auto"
+  device: "auto"                    
 
 # 6. Cấu hình Kiểm định Tài chính & Backtesting (Trading Simulation)
 # Backtesting: Mô phỏng lại quá trình giao dịch để đánh giá hiệu quả của mô hình
