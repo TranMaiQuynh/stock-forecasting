@@ -41,10 +41,10 @@ data:
   target_col: "Log_Return"                                    
   use_log_return: true
 
-  # [v2-FIX] Jittering Augmentation — Tăng cường dữ liệu chuỗi thời gian
-  use_augmentation: true             # Bật Jittering: thêm nhiễu Gauss vi mô vào tập Train
-  noise_std: 0.002                   # Độ lệch chuẩn nhiễu (0.2% — mô phỏng dao động sổ lệnh)
-  n_augmented: 2                     # Số bản sao augmented (2 → tổng gấp 3× tập gốc: ~1170 → ~3510 mẫu)
+  # [v2-FIX] Jittering Augmentation 
+  use_augmentation: true             
+  noise_std: 0.002                  
+  n_augmented: 2                  
 
 # 2. Cấu hình Cửa sổ Chuỗi Thời Gian
 # window (cửa sổ trượt): là một "khung nhìn" chứa N ngày quá khứ, được dùng để dự đoán N_out ngày tương lai. Về bản chất, nó là kích thước bộ nhớ của mô hình.
