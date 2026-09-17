@@ -52,6 +52,7 @@ class StockTrainer:
         ticker: str = "AAPL",
         seed: int = 42,
         log_base_dir: str = "logs",
+        target_scaler=None,  # Cần để tính đúng zero_point cho DirectionalPenaltyLoss
     ):
         self.model = model
         self.config = config
@@ -88,10 +89,23 @@ class StockTrainer:
         # ── Hàm Loss ──────────────────────────────────────────────────────────
         self.loss_type = cfg_train.get('loss_type', 'huber')
         use_log_return = config.get('data', {}).get('use_log_return', False)
+
+        # Tính zero_point tất định từ target_scaler:
+        # zero_point = (0 - mean_) / scale_  — giá trị "raw Log_Return = 0" sau khi StandardScaler.
+        # Cần thiết vì y_pred/y_true trong forward() đã ở không gian scaled:
+        # sign(y_true_scaled) ≠ sign(y_true_raw) khi scaler.mean_ ≠ 0.
+        zero_point = 0.0
+        if use_log_return and target_scaler is not None:
+            try:
+                zero_point = float(-target_scaler.mean_[0] / target_scaler.scale_[0])
+            except (AttributeError, IndexError, ZeroDivisionError):
+                zero_point = 0.0  # Fallback an toàn nếu scaler chưa fit
+
         self.criterion = get_loss_function(
             loss_type=self.loss_type,
             penalty_weight=cfg_train.get('directional_penalty_weight', 0.5),
-            use_log_return=use_log_return,  # [v2-FIX] Truyền chế độ target cho DirectionalLoss
+            use_log_return=use_log_return,
+            zero_point=zero_point,
         )
         self.uses_directional_loss = isinstance(self.criterion, DirectionalPenaltyLoss)
 

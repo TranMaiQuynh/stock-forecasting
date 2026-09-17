@@ -16,18 +16,22 @@ class DirectionalPenaltyLoss(nn.Module):
     """
     Hàm Loss kết hợp giữa Huber/MSE Loss và hình phạt sai hướng (Directional Penalty).
 
-    Chế độ Close (use_log_return=False):
-        Loss = Base_Loss + penalty_weight * mean(max(0, -sign(y_true - y_prev) * (y_pred - y_prev)))
-
     Chế độ Log_Return (use_log_return=True):
-        Loss = Base_Loss + penalty_weight * mean(max(0, -sign(y_true) * y_pred))
-        → Giá tăng khi r_t > 0, giảm khi r_t < 0. Mốc chuẩn là 0, không cần y_prev.
+        y_pred/y_true nhận được trong forward() đã qua StandardScaler.fit_transform().
+        sign(y_true_scaled) ≠ sign(y_true_raw) khi scaler.mean_ ≠ 0 (luôn đúng với Log_Return thật).
+        Cần so sánh với zero_point = (0 - mean_) / scale_ — giá trị scaled của "raw = 0" (giá không đổi).
+        zero_point được trao từ ngoài (StockTrainer.__init__ tính từ target_scaler) — không có magic number.
+
+    Chế độ Close (use_log_return=False):
+        Hướng = sign(y_true - y_prev). Cả hai cùng scale nên độ lệch mean bị triệt tiêu khi trừ nhau.
+        zero_point không được dùng trong nhánh này.
     """
     def __init__(self, penalty_weight: float = 0.5, base_loss: str = "huber",
-                 use_log_return: bool = False):
+                 use_log_return: bool = False, zero_point: float = 0.0):
         super().__init__()
         self.penalty_weight = penalty_weight
         self.use_log_return = use_log_return
+        self.zero_point = zero_point   # scaled value of raw=0; computed from target_scaler outside
         if base_loss == "huber":
             self.base_criterion = nn.SmoothL1Loss()
         else:
@@ -40,13 +44,12 @@ class DirectionalPenaltyLoss(nn.Module):
             return base_loss
 
         if self.use_log_return:
-            # [v2-FIX] Log_Return mode: hướng = sign(r_true), penalty khi đoán sai dấu
-            # r_true > 0 → giá tăng, r_true < 0 → giá giảm
-            # Nếu sign(r_true) * r_pred < 0 → đoán sai hướng → bị phạt
-            true_direction = torch.sign(y_true)
-            penalty = F.relu(-true_direction * y_pred)
+            # So sánh với zero_point (không phải 0 tuyệt đối) — sửa lỗi lệch hướng do StandardScaler
+            zp = torch.tensor(self.zero_point, dtype=y_true.dtype, device=y_true.device)
+            true_direction = torch.sign(y_true - zp)
+            penalty = F.relu(-true_direction * (y_pred - zp))
         else:
-            # Chế độ Close gốc: hướng = sign(y_true - y_prev)
+            # Chế độ Close: hướng = sign(y_true - y_prev), cả hai cùng scale nên đúng
             if y_prev is None:
                 return base_loss
             true_direction = torch.sign(y_true - y_prev)
@@ -58,7 +61,14 @@ class DirectionalPenaltyLoss(nn.Module):
 
 
 def get_loss_function(loss_type: str = "huber", penalty_weight: float = 0.5,
-                      use_log_return: bool = False):
+                      use_log_return: bool = False, zero_point: float = 0.0):
+    """
+    Tạo hàm loss theo loại đã chọn.
+
+    zero_point: chỉ có hiệu lực khi loss_type='directional' và use_log_return=True.
+    Giá trị này là (0 - target_scaler.mean_[0]) / target_scaler.scale_[0]
+    (giá trị 'raw = 0' quy đổi sang không gian đã scale — không phải magic number).
+    """
     loss_type = loss_type.lower()
     if loss_type == "mse":
         return nn.MSELoss()
@@ -71,6 +81,7 @@ def get_loss_function(loss_type: str = "huber", penalty_weight: float = 0.5,
             penalty_weight=penalty_weight,
             base_loss="huber",
             use_log_return=use_log_return,
+            zero_point=zero_point,
         )
     else:
         raise ValueError(f"Loại loss không hợp lệ: {loss_type}")
