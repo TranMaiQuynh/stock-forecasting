@@ -34,7 +34,6 @@ from evaluation.stock_metric import (
     calculate_directional_accuracy_detailed,
     run_cross_ticker_summary
 )
-from training.metric import evaluate_ml_metrics
 
 
 def evaluate_single_ticker_models(
