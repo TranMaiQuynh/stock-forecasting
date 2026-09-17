@@ -51,7 +51,6 @@ def run_live_inference(config_path: str = "config/stock.yaml", model_name: str =
     )
     
     if version == "v0":
-        use_cols = [c for c in ['Open', 'High', 'Low', 'Close', 'Volume', 'Log_Return'] if c in raw_df.columns]
         processed_df = raw_df[['Open', 'High', 'Low', 'Close', 'Volume']].copy()
     else:
         df_ti = calculate_technical_indicators(raw_df)
@@ -74,7 +73,13 @@ def run_live_inference(config_path: str = "config/stock.yaml", model_name: str =
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     input_dim = len(feature_cols)
     actual_model_name = "cnn_bilstm_attention" if model_name in ["v2_sota", "cnn_bilstm_attention_v2"] else model_name
-    model = build_model_by_name(actual_model_name, input_dim=input_dim, config=config, forecast_horizon=1)
+    # forecast_horizon được giải quyết động — giống logic trong cli/train.py:61-65
+    forecast_horizon = (
+        cfg_win['multi_step_horizon']
+        if ("multistep" in actual_model_name or version == "v3")
+        else cfg_win['forecast_horizon']
+    )
+    model = build_model_by_name(actual_model_name, input_dim=input_dim, config=config, forecast_horizon=forecast_horizon)
     
     ckpt_candidates = [
         os.path.join(config['training']['checkpoint_dir'], ticker, f"{actual_model_name}_{version}_seed42_best.pt"),
@@ -106,7 +111,9 @@ def run_live_inference(config_path: str = "config/stock.yaml", model_name: str =
         pred_scaled = model(input_tensor).cpu().numpy().flatten()
         
     # 5. Denormalize bằng target_scaler từ training data
-    target_val = target_scaler.inverse_transform(pred_scaled.reshape(-1, 1)).flatten()[0]
+    # pred_scaled có shape (forecast_horizon,) — chỉ lấy bước đầu tiên (t+1) để hiển thị
+    # Nếu muốn hiển thị đa bước, mở rộng phần này trong tương lai
+    target_val = target_scaler.inverse_transform(pred_scaled[0:1].reshape(-1, 1)).flatten()[0]
     use_log_return = config.get('data', {}).get('use_log_return', False)
     
     if use_log_return:
