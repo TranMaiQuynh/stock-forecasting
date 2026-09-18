@@ -74,44 +74,41 @@ model:
   
   # Cấu hình kiến trúc
   # Giảm 80% tham số — 1170 mẫu train không đủ cho model cũ (~250k params)
-  # Tham số/mẫu thực tế (hidden_dim=32, num_layers=2, aug x3): ~12 (raw) / ~4 (aug) — an toàn với dropout=0.35
+  # Tham số/mẫu thực tế (hidden_dim=32, num_layers=2, aug x3): ~12 (raw) / ~4 (aug) — an toàn với dropout=0.2
   lstm:
     hidden_dim: 32                   # Giảm 64→32: giảm 75% params BiLSTM, tránh memorize 1170 mẫu train
     num_layers: 2                    # DeepLSTM (v1) CẦN 2 tầng để thực sự "deep" hơn VanillaLSTM (v0=1 tầng)
-                                     # params/mẫu (sau aug x3): 14,433/3,510 = 4.1 — an toàn với dropout=0.35
-    dropout: 0.35                    # Tăng 0.2→0.35: siết regularization mạnh hơn
+                                     # params/mẫu (sau aug x3): 14,433/3,510 = 4.1 — an toàn với dropout=0.2
+    dropout: 0.2                     # Giảm 0.35→0.2: tránh over-regularization với dataset nhỏ
   
   cnn1d:
     num_filters: 32                  # Giảm 64→32 filters
     kernel_size: 3                   # Kích thước kernel (quét qua từng cụm 3 ngày liên tiếp)
-    dropout: 0.35                    # Tăng 0.2→0.35
+    dropout: 0.2                     # Giảm 0.35→0.2: nhất quán với lstm
     
   cnn_bilstm_attention:
     cnn_filters: 32                  # Giảm 64→32: −75% params CNN
     kernel_size: 3                   # Kích thước kernel CNN
     lstm_hidden: 32                  # Giảm 64→32: BiLSTM 32×2=64 chiều (thay vì 128)
     num_heads: 2                     # Giảm 4→2 heads: −75% params Attention
-    dropout: 0.35                    # Tăng 0.2→0.35
+    dropout: 0.2                     # Giảm 0.35→0.2: nhất quán với lstm
 
   seq2seq:                           # Dành cho dự báo nhiều ngày - Multi-step
     hidden_dim: 32                   # Giảm 64→32
-    dropout: 0.35                    # Tăng 0.2→0.35
+    dropout: 0.2                     # Giảm 0.35→0.2: nhất quán với lstm
 
 # 5. Cấu hình Huấn Luyện 
 training:
   batch_size: 32
   epochs: 100                     
   learning_rate: 0.001             
-  weight_decay: 0.001              # Tăng 0.0001→0.001: phạt L2 mạnh gấp 10× để kiềm chế weights lớn
-  loss_type: "directional"          # Kích hoạt DirectionalPenaltyLoss: phạt NẶNG khi đoán sai chiều xu hướng
-                                    # Loss = Huber(ŷ,y) + 0.5 × max(0, −sign(y − zero_point) × (ŷ − zero_point))
-                                    # zero_point = (0 − scaler.mean_) / scaler.scale_  ← giá trị scaled của "Log_Return = 0"
-                                    # → Mô hình BỊ PHẠT ĐÔI khi dự báo Giảm nhưng thực tế Tăng (và ngược lại)
-                                    # Để dùng loss đơn giản: đổi lại thành "huber"
-  directional_penalty_weight: 0.5   # Hệ số phạt chiều hướng (0.5 = cân bằng Huber và hướng)
-  early_stopping_patience: 10       # = scheduler_patience(5) × 2 — đảm bảo model có đủ thời gian hưởng lợi
-                                     # từ 1 chu kỳ LR reduction (ReduceLROnPlateau patience=5, factor=0.5)
-                                     # sau khi LR giảm còn cần ~5 epoch để val_loss phản hồi tại LR mới
+  weight_decay: 0.0001              # Giảm 0.001→0.0001: về Adam default, tránh L2 quá mạnh gây model collapse
+  loss_type: "huber"                # SmoothL1Loss — ổn định hơn DirectionalPenaltyLoss với dataset nhỏ
+                                    # Đổi thành "directional" để bật DirectionalPenaltyLoss (phạt sai chiều xu hướng)
+                                    # Loss = Huber(ŷ,y) + penalty_weight × max(0, −sign(y−zero_point)×(ŷ−zero_point))
+  directional_penalty_weight: 0.5   # Chỉ có hiệu lực khi loss_type="directional"
+  early_stopping_patience: 15       # Tăng 10→15: cho model đủ thời gian hưởng lợi từ ReduceLROnPlateau
+                                     # scheduler_patience=5 (giảm LR) + ~10 epoch để val_loss ổn định tại LR mới
   checkpoint_dir: "checkpoints"
   device: "auto"
   teacher_forcing_ratio: 0.5         # Xác suất dùng nhãn thật tại bước t (chỉ cho Seq2Seq v3)
