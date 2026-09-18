@@ -101,7 +101,9 @@ def calculate_financial_metrics(actual_prices: np.ndarray, pred_prices: np.ndarr
         downside_returns = strategy_returns[strategy_returns < daily_rf] - daily_rf
         if len(downside_returns) > 1:
             downside_std = np.std(downside_returns)
-            sortino_ratio = (np.mean(excess_returns) / (downside_std + 1e-9)) * np.sqrt(252)
+            # Tránh chia cho số cực nhỏ (nổ tung Sortino) khi downside_std gần 0
+            safe_downside_std = max(downside_std, 1e-5)
+            sortino_ratio = (np.mean(excess_returns) / safe_downside_std) * np.sqrt(252)
         else:
             sortino_ratio = sharpe_ratio  # Không có phiên lỗ → tương đương Sharpe
     
