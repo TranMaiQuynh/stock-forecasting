@@ -99,13 +99,17 @@ def calculate_financial_metrics(actual_prices: np.ndarray, pred_prices: np.ndarr
         
         # 5. Sortino Ratio (chỉ phạt biến động giảm)
         downside_returns = strategy_returns[strategy_returns < daily_rf] - daily_rf
-        if len(downside_returns) > 1:
+        # Cần tối thiểu 5 quan sát downside để ước lượng downside_std có ý nghĩa thống kê.
+        # Nếu thiếu mẫu (vd: model chỉ trade 3 lệnh, std → 0 do đồng phí slippage),
+        # fallback về Sharpe — đây là quy ước chuẩn trong tài chính học thuật.
+        if len(downside_returns) >= 5:
             downside_std = np.std(downside_returns)
-            # Tránh chia cho số cực nhỏ (nổ tung Sortino) khi downside_std gần 0
-            safe_downside_std = max(downside_std, 1e-5)
-            sortino_ratio = (np.mean(excess_returns) / safe_downside_std) * np.sqrt(252)
+            if downside_std > 1e-10:  # zero thuần túy (numerical): fallback
+                sortino_ratio = (np.mean(excess_returns) / downside_std) * np.sqrt(252)
+            else:
+                sortino_ratio = sharpe_ratio
         else:
-            sortino_ratio = sharpe_ratio  # Không có phiên lỗ → tương đương Sharpe
+            sortino_ratio = sharpe_ratio  # Không đủ mẫu downside → dùng Sharpe làm xấp xỉ
     
     # 6. Maximum Drawdown (MDD)
     peak = np.maximum.accumulate(equity_curve)
