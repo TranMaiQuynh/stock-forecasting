@@ -240,16 +240,16 @@ def calculate_directional_accuracy_detailed(y_true, y_pred, y_prev=None, is_log_
 
 
 def run_cross_ticker_summary(results_list, output_dir="output"):
-    """[v2-FIX] Tong hop ket qua Mean +- Std theo nhieu tickers x seeds (chuan NCKH).
-    Moi dict trong results_list phai co: model, ticker, seed + cac metric columns.
+    """Tổng hợp kết quả Mean ± Std theo nhiều tickers x seeds (chuẩn NCKH).
+    Mỗi dict trong results_list phải có: 'Model', 'Ticker', 'Seed', 'Version' + các metric columns.
     """
     import os as _os
     import pandas as _pd
     _os.makedirs(output_dir, exist_ok=True)
     df = _pd.DataFrame(results_list)
-    exclude = {"ticker", "seed", "model", "version"}
+    exclude = {"Ticker", "Seed", "Model", "Version"}
     metric_cols = [c for c in df.columns if c not in exclude]
-    grouped = df.groupby(["model", "ticker"])[metric_cols]
+    grouped = df.groupby(["Model", "Ticker"])[metric_cols]
     mean_df = grouped.mean().round(3)
     std_df = grouped.std().round(3).fillna(0)
     combined = {}
@@ -258,7 +258,7 @@ def run_cross_ticker_summary(results_list, output_dir="output"):
     summary_df = _pd.DataFrame(combined)
     path = _os.path.join(output_dir, "cross_ticker_summary.md")
     try:
-        overall = df.groupby("model")[metric_cols].agg(["mean", "std"]).round(3)
+        overall = df.groupby("Model")[metric_cols].agg(["mean", "std"]).round(3)
         with open(path, "w", encoding="utf-8") as f:
             f.write("# Cross-Ticker Results Summary (Mean +- Std)\n")
             f.write("> Chuan bao cao NCKH: moi o = Mean +- Std tren nhieu seeds\n\n")
