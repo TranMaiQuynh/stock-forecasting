@@ -4,13 +4,12 @@ Hỗ trợ huấn luyện từng phiên bản đơn lẻ hoặc chạy toàn b�
 (Base → v0 → v1 → v2 → v3) trên nhiều mã cổ phiếu và nhiều random seeds.
 
 Chiến lược thực nghiệm:
-- Baseline & v0: Chạy với seed mặc định (42), chỉ AAPL → làm mốc đối chứng
-- v1, v2, v3: Chạy với cả 2 seeds (42 & 100) × 3 tickers (AAPL, TSLA, MSFT)
-  → Chứng minh tính tổng quát hoá và ổn định của kiến trúc
+- Baseline (naive + linear): AAPL only, seed=42 → làm sàn tham chiếu tối thiểu (không có weight)
+- v0, v1, v2, v3: ALL tickers × ALL seeds → ablation study hoàn toàn đối xứng
 
 Kết quả:
 - Mỗi epoch → 1 ảnh PNG trong logs/training_runs/{TICKER}/{model}/seed_{N}/
-- Checkpoint tốt nhất → checkpoints/{TICKER}/{model}_seed{N}_best.pt
+- Checkpoint tốt nhất → checkpoints/{TICKER}/{model}_{version}_seed{N}_best.pt
 """
 
 import os
