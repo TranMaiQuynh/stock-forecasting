@@ -4,13 +4,12 @@ Hỗ trợ huấn luyện từng phiên bản đơn lẻ hoặc chạy toàn b�
 (Base → v0 → v1 → v2 → v3) trên nhiều mã cổ phiếu và nhiều random seeds.
 
 Chiến lược thực nghiệm:
-- Baseline & v0: Chạy với seed mặc định (42), chỉ AAPL → làm mốc đối chứng
-- v1, v2, v3: Chạy với cả 2 seeds (42 & 100) × 3 tickers (AAPL, TSLA, MSFT)
-  → Chứng minh tính tổng quát hoá và ổn định của kiến trúc
+- Baseline (naive + linear): AAPL only, seed=42 → làm sàn tham chiếu tối thiểu (không có weight)
+- v0, v1, v2, v3: ALL tickers × ALL seeds → ablation study hoàn toàn đối xứng
 
 Kết quả:
 - Mỗi epoch → 1 ảnh PNG trong logs/training_runs/{TICKER}/{model}/seed_{N}/
-- Checkpoint tốt nhất → checkpoints/{TICKER}/{model}_seed{N}_best.pt
+- Checkpoint tốt nhất → checkpoints/{TICKER}/{model}_{version}_seed{N}_best.pt
 """
 
 import os
@@ -126,11 +125,13 @@ def run_training_pipeline(
     """
     Chạy toàn bộ pipeline huấn luyện theo chiến lược thực nghiệm chuẩn:
 
-    - Baseline (naive + linear): 1 lần, AAPL, seed=42
-    - v0 (Vanilla LSTM, Vanilla CNN): 1 lần, AAPL, seed=42
-    - v1 (Deep LSTM, Temporal CNN): 2 seeds × 3 tickers
-    - v2 (CNN-BiLSTM-Attention):    2 seeds × 3 tickers
-    - v3 (Seq2Seq Attention):        2 seeds × 3 tickers
+    - Baseline (naive + linear): AAPL only, seed=42  ← mốc đối chiếu tối thiểu (không có weight)
+    - v0 (Vanilla LSTM, Vanilla CNN): ALL tickers × ALL seeds  ← đối xứng với v1/v2/v3
+    - v1 (Deep LSTM, Temporal CNN):   ALL tickers × ALL seeds
+    - v2 (CNN-BiLSTM-Attention):      ALL tickers × ALL seeds
+    - v3 (Seq2Seq Attention):         ALL tickers × ALL seeds
+
+    Tất cả v0/v1/v2/v3 train cùng điều kiện → ablation study hoàn toàn đối xứng và công bằng.
     """
     config = load_config(config_path)
 
@@ -145,20 +146,23 @@ def run_training_pipeline(
         print(f"   🎲  Seeds    : {all_seeds}")
         print("="*70)
 
-        # ─── PHASE 1: Baseline & v0 ─ AAPL only, seed=42 ─────────────────────
-        # (Baseline không cần test đa dạng, chỉ làm mốc đối chiếu cho AAPL)
-        print("\n\n📌 PHASE 1: Baseline + v0  (AAPL · Seed 42 — Mốc đối chứng)\n")
+        # ─── PHASE 1: Baseline ─ AAPL only, seed=42 ──────────────────────────
+        # Baseline (naive/linear) không có weight → không cần multi-ticker.
+        # Chỉ dùng làm sàn tham chiếu tối thiểu cho AAPL.
+        print("\n\n📌 PHASE 1: Baseline  (AAPL · Seed 42 — Mốc sàn tham chiếu)\n")
         for m_name, v_name in [
             ("naive_baseline",  "baseline"),
             ("linear_baseline", "baseline"),
-            ("vanilla_lstm",    "v0"),
-            ("vanilla_cnn1d",   "v0"),
         ]:
             train_single_model(m_name, v_name, config, ticker="AAPL", seed=42)
 
-        # ─── PHASE 2: v1, v2, v3 ─ Multi-ticker × Multi-seed ─────────────────
-        print("\n\n📌 PHASE 2: v1 / v2 / v3  (Multi-Ticker × Multi-Seed — Chứng minh tính tổng quát)\n")
-        advanced_models = [
+        # ─── PHASE 2: v0, v1, v2, v3 ─ Multi-ticker × Multi-seed ─────────────
+        # v0 được đưa vào cùng vòng lặp với v1/v2/v3 để đảm bảo ablation study
+        # hoàn toàn đối xứng: mọi version đều được đánh giá trên cùng ticker×seed.
+        print("\n\n📌 PHASE 2: v0 / v1 / v2 / v3  (Multi-Ticker × Multi-Seed — Ablation đối xứng)\n")
+        all_models = [
+            ("vanilla_lstm",           "v0"),
+            ("vanilla_cnn1d",          "v0"),
             ("deep_lstm",              "v1"),
             ("temporal_cnn1d",         "v1"),
             ("cnn_bilstm_attention",   "v2"),
@@ -166,7 +170,7 @@ def run_training_pipeline(
         ]
         for ticker in all_tickers:
             for seed in all_seeds:
-                for m_name, v_name in advanced_models:
+                for m_name, v_name in all_models:
                     train_single_model(m_name, v_name, config, ticker=ticker, seed=seed)
 
     else:

@@ -99,11 +99,17 @@ def calculate_financial_metrics(actual_prices: np.ndarray, pred_prices: np.ndarr
         
         # 5. Sortino Ratio (chỉ phạt biến động giảm)
         downside_returns = strategy_returns[strategy_returns < daily_rf] - daily_rf
-        if len(downside_returns) > 1:
+        # Cần tối thiểu 5 quan sát downside để ước lượng downside_std có ý nghĩa thống kê.
+        # Nếu thiếu mẫu (vd: model chỉ trade 3 lệnh, std → 0 do đồng phí slippage),
+        # fallback về Sharpe — đây là quy ước chuẩn trong tài chính học thuật.
+        if len(downside_returns) >= 5:
             downside_std = np.std(downside_returns)
-            sortino_ratio = (np.mean(excess_returns) / (downside_std + 1e-9)) * np.sqrt(252)
+            if downside_std > 1e-10:  # zero thuần túy (numerical): fallback
+                sortino_ratio = (np.mean(excess_returns) / downside_std) * np.sqrt(252)
+            else:
+                sortino_ratio = sharpe_ratio
         else:
-            sortino_ratio = sharpe_ratio  # Không có phiên lỗ → tương đương Sharpe
+            sortino_ratio = sharpe_ratio  # Không đủ mẫu downside → dùng Sharpe làm xấp xỉ
     
     # 6. Maximum Drawdown (MDD)
     peak = np.maximum.accumulate(equity_curve)
@@ -234,16 +240,16 @@ def calculate_directional_accuracy_detailed(y_true, y_pred, y_prev=None, is_log_
 
 
 def run_cross_ticker_summary(results_list, output_dir="output"):
-    """[v2-FIX] Tong hop ket qua Mean +- Std theo nhieu tickers x seeds (chuan NCKH).
-    Moi dict trong results_list phai co: model, ticker, seed + cac metric columns.
+    """Tổng hợp kết quả Mean ± Std theo nhiều tickers x seeds (chuẩn NCKH).
+    Mỗi dict trong results_list phải có: 'Model', 'Ticker', 'Seed', 'Version' + các metric columns.
     """
     import os as _os
     import pandas as _pd
     _os.makedirs(output_dir, exist_ok=True)
     df = _pd.DataFrame(results_list)
-    exclude = {"ticker", "seed", "model", "version"}
+    exclude = {"Ticker", "Seed", "Model", "Version"}
     metric_cols = [c for c in df.columns if c not in exclude]
-    grouped = df.groupby(["model", "ticker"])[metric_cols]
+    grouped = df.groupby(["Model", "Ticker"])[metric_cols]
     mean_df = grouped.mean().round(3)
     std_df = grouped.std().round(3).fillna(0)
     combined = {}
@@ -252,7 +258,7 @@ def run_cross_ticker_summary(results_list, output_dir="output"):
     summary_df = _pd.DataFrame(combined)
     path = _os.path.join(output_dir, "cross_ticker_summary.md")
     try:
-        overall = df.groupby("model")[metric_cols].agg(["mean", "std"]).round(3)
+        overall = df.groupby("Model")[metric_cols].agg(["mean", "std"]).round(3)
         with open(path, "w", encoding="utf-8") as f:
             f.write("# Cross-Ticker Results Summary (Mean +- Std)\n")
             f.write("> Chuan bao cao NCKH: moi o = Mean +- Std tren nhieu seeds\n\n")

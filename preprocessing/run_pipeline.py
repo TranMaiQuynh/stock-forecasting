@@ -13,6 +13,9 @@ import pandas as pd
 import yfinance as yf
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler
 
+# Suppress downcasting warning for .clip()
+pd.set_option('future.no_silent_downcasting', True)
+
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 if hasattr(sys.stderr, 'reconfigure'):

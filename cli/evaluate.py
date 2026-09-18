@@ -65,21 +65,34 @@ def evaluate_single_ticker_models(
     
     summary_rows = []
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
+    # Horizon lớn nhất trong toàn bộ models_to_eval (hiện là 7, từ seq2seq_multistep).
+    # Dùng để căn N_test cho MỌI model về cùng một khoảng ngày Test — xem giải thích chi tiết
+    # ngay tại chỗ dùng bên dưới.
+    max_horizon = max(fh for _, _, _, fh in models_to_eval)
+
     print("\n" + "="*90)
     print(f"   📊 ĐÁNH GIÁ VÀ SO SÁNH CÁC PHIÊN BẢN (ABLATION BENCHMARK) — {ticker.upper()} (Seed={seed})")
     print(f"   🎯 Ngưỡng Backtest: {sig_thresh*100:.3f}% (Log Return signal)")
     print("="*90)
-    
+
     cfg_ticker = dict(config)
     cfg_ticker['data'] = dict(config['data'])
     cfg_ticker['data']['ticker'] = ticker
-    
+
+    # prepare_dataset_pipeline() là hàm thuần (không random, không side-effect) chỉ phụ thuộc
+    # (cfg_ticker, v_data) — chỉ có 2 giá trị v_data khả dĩ ("v0"/"v1") trong 8 model, nên tính
+    # sẵn 1 lần mỗi loại và tái sử dụng, thay vì gọi lại 4 lần trùng lặp cho mỗi loại.
+    # Không đổi kết quả số học của bất kỳ model nào, chỉ giảm I/O đọc CSV + tính lại chỉ báo dư thừa.
+    data_bundles_by_vdata = {}
+    for v_data_key in {("v0" if v in ["baseline", "v0"] else "v1") for _, v, _, _ in models_to_eval}:
+        data_bundles_by_vdata[v_data_key] = prepare_dataset_pipeline(cfg_ticker, version=v_data_key)
+
     for model_name, version, display_name, forecast_horizon in models_to_eval:
         print(f"\n--- Đang đánh giá: {display_name} ({ticker} | Seed {seed}) ---")
-        
+
         v_data = "v0" if version in ["baseline", "v0"] else "v1"
-        data_bundle = prepare_dataset_pipeline(cfg_ticker, version=v_data)
+        data_bundle = data_bundles_by_vdata[v_data]
         input_dim = len(data_bundle['feature_cols'])
         feature_cols = data_bundle['feature_cols']
         target_scaler = data_bundle['target_scaler']
@@ -94,12 +107,19 @@ def evaluate_single_ticker_models(
         )
         
         N_test = len(test_loader.dataset)
+        # Căn N_test theo max_horizon để 8 model cùng đánh giá trên đúng một khoảng ngày Test.
+        # Công thức sliding window: total_samples = len(features) - input_window - forecast_horizon + 1
+        # → horizon=1 cho N_test nhiều hơn horizon=7 đúng (max_horizon - 1) = 6 mẫu ở CUỐI chuỗi.
+        # Những 6 mẫu cuối này target các ngày mà v3 (horizon=7) không có prediction.
+        # Giữ [:N_test] (bỏ 6 mẫu CUỐI của horizon=1) → cả 8 model cùng bắt đầu từ ngày Test W
+        # và kết thúc tại ngày Test W + N_test - 1, không model nào có thêm hay thiếu ngày.
+        N_test -= (max_horizon - forecast_horizon)
         W = cfg_win['input_window']
         test_close_prev = test_df['Close'].iloc[W - 1 : W - 1 + N_test].values
         test_close_true = test_df['Close'].iloc[W : W + N_test].values
-        
-        y_test_scaled = test_loader.dataset.y.numpy()
-        X_test = test_loader.dataset.X.numpy()
+
+        y_test_scaled = test_loader.dataset.y.numpy()[:N_test]
+        X_test = test_loader.dataset.X.numpy()[:N_test]
         
         # 1. Dự báo
         if model_name == "naive_baseline":
@@ -148,7 +168,12 @@ def evaluate_single_ticker_models(
                 y_pred_scaled = np.vstack(preds)
                 if len(y_pred_scaled.shape) == 1:
                     y_pred_scaled = y_pred_scaled[:, np.newaxis]
-        
+
+        # Cắt về đúng N_test đã căn theo max_horizon (xem giải thích ở trên).
+        # Với naive/linear baseline, X_test đã được cắt sẵn nên dòng này là no-op an toàn;
+        # với model DL, test_loader vẫn lặp qua toàn bộ N_test gốc (chưa cắt) nên cần cắt ở đây.
+        y_pred_scaled = y_pred_scaled[:N_test]
+
         # Xử lý multi-step: chỉ lấy step đầu tiên (t+1) để so sánh chuẩn hóa
         if forecast_horizon > 1:
             y_pred_for_eval = y_pred_scaled[:, 0:1]
