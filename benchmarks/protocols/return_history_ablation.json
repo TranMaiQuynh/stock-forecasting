@@ -1,0 +1,50 @@
+{
+  "protocol_id": "return-history-ablation-v1",
+  "frozen_on": "2026-11-12",
+  "purpose": "Personal research: evaluate a causal feature group without claiming trading profitability",
+  "assets": ["AAPL", "MSFT"],
+  "source": {
+    "provider": "Yahoo Finance via yfinance 1.0",
+    "start": "2015-01-01",
+    "end_exclusive": "2026-01-01",
+    "interval": "1d",
+    "auto_adjust": true,
+    "back_adjust": false,
+    "repair": false,
+    "keepna": true,
+    "point_in_time_verified": false,
+    "selection_limitation": "Two preselected surviving large US technology companies; no market-wide inference"
+  },
+  "target": "next_observation_log_return",
+  "forecast_origin": "after the preceding session close is available",
+  "horizon": 1,
+  "baseline": "zero_log_return",
+  "estimator": "training-only StandardScaler followed by Ridge with deterministic SVD solver",
+  "lookbacks": [1, 5, 10],
+  "ridge_alphas": [1.0, 10.0],
+  "feature_groups": ["returns", "returns_abs"],
+  "hypothesis": "Absolute return lags may add magnitude-dependent mean-return information beyond signed return lags; the effect may be absent or unstable",
+  "feature_definitions": {
+    "returns": "Last L observed log returns, newest first",
+    "returns_abs": "Signed return lags followed by their absolute values; L additional causal features"
+  },
+  "development": {
+    "min_train_size": 756,
+    "validation_size": 126,
+    "test_size": 126,
+    "step_size": 126,
+    "partial_final_fold": "not scored; report unused tail explicitly",
+    "selection": "Each feature group tunes lookback and alpha on the same inner validation targets; pooled outer-development RMSE selects the group per asset",
+    "tie_policy": "Prefer returns when aggregate RMSE is equal within 1e-12"
+  },
+  "final_holdout_start": "2023-01-01",
+  "final_fit_policy": "Freeze the selected feature group; tune lookback/alpha on the last 126 pre-holdout observations using earlier training only; no refit; score final holdout once",
+  "metrics": ["log_return_rmse", "log_return_mae", "rmse_skill_vs_zero"],
+  "randomness": "Deterministic Ridge SVD; seed 42 recorded, no stochastic training or seed cherry-picking",
+  "max_analysis_lag": 20,
+  "diagnostic_alpha": 0.05,
+  "tuning_budget": "6 trials per feature group per development fold; 6 final trials for the selected group",
+  "reporting": "Retain every fold/group/trial, failures, negative results, raw predictions and input/artifact hashes; never retune based on final holdout",
+  "backtest": "withheld_no_execution_contract",
+  "promotion": "No automatic model promotion; pipeline validity does not require beating the baseline"
+}
