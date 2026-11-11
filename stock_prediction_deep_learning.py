@@ -36,6 +36,7 @@ from quant_forecast_lab.config import (
 )
 from quant_forecast_lab.evaluation import evaluate_price_forecast
 from quant_forecast_lab.experiment import runtime_metadata, sha256_file
+from quant_forecast_lab.reconstruction import causal_trend, rolling_return_prices
 from quant_forecast_lab.reproducibility import set_global_seed
 from stock_prediction_class import StockPrediction
 from stock_prediction_lstm import LongShortTermMemory
@@ -57,15 +58,6 @@ def load_v9_model(path, *, compile_model=False):
     """Load a saved v9 model, registering its quantile loss first."""
     return tf.keras.models.load_model(path, compile=compile_model)
 
-
-
-def _returns_to_prices(returns, start_price):
-    prices = []
-    current_price = start_price
-    for value in returns:
-        current_price = current_price * np.exp(value)
-        prices.append(current_price)
-    return prices
 
 
 def _chronological_validation_split(*arrays, fraction=DEFAULT_VALIDATION_FRACTION, purge=0):
@@ -375,16 +367,14 @@ def train_LSTM_network(
             test_predictions_baseline = test_predictions_baseline.flatten()
     if use_returns:
         last_train_close = training_data['Close'].iloc[-1]
+        base_close = test_data['Close'].shift(1)
+        base_close.iloc[0] = last_train_close
+        base_values = base_close.to_numpy().reshape(-1)
+        predicted_prices = rolling_return_prices(test_predictions_baseline.reshape(-1), base_values)
+        predictions_df = pd.DataFrame(
+            {stock.get_ticker() + '_predicted': predicted_prices}, index=test_data.index,
+        )
         if model_version == 'v9':
-            base_close = test_data['Close'].shift(1)
-            base_close.iloc[0] = last_train_close
-            base_values = base_close.to_numpy().reshape(-1)
-            predicted_prices = base_values * np.exp(test_predictions_baseline)
-            predictions_df = pd.DataFrame(
-                {stock.get_ticker() + '_predicted': predicted_prices},
-                index=test_data.index,
-            )
-
             actual_close = test_data['Close'].to_numpy().reshape(-1)
             actual_returns = np.log(actual_close / base_values)
             zero_rmse = float(np.sqrt(np.mean(actual_returns ** 2)))
@@ -427,9 +417,6 @@ def train_LSTM_network(
             ) as return_metrics_file:
                 json.dump(return_metrics, return_metrics_file, indent=2, allow_nan=False)
             print('Return forecast metrics:', return_metrics)
-        else:
-            predicted_prices = _returns_to_prices(test_predictions_baseline, last_train_close)
-            predictions_df = pd.DataFrame({stock.get_ticker() + '_predicted': predicted_prices})
     elif use_deltas:
         last_train_close = training_data['Close'].iloc[-1]
         base_close = test_data['Close'].shift(1)
@@ -442,14 +429,16 @@ def train_LSTM_network(
             predicted_prices = base_close.to_numpy().flatten() + test_predictions_baseline.flatten()
         predictions_df = pd.DataFrame({stock.get_ticker() + '_predicted': predicted_prices}, index=test_data.index)
     elif use_trend_residual:
-        base_close = test_data['Close'].shift(1)
-        base_close.iloc[0] = training_data['Close'].iloc[-1]
-        if model_version == 'v6':
-            step_residuals = test_predictions_baseline[:, 0]
-            predicted_prices = base_close.to_numpy().flatten()[:len(step_residuals)] + step_residuals
-            test_data = test_data.iloc[:len(step_residuals)]
-        else:
-            predicted_prices = base_close.to_numpy().flatten() + test_predictions_baseline.flatten()
+        # Score the first head at each observed origin. Later direct heads have
+        # overlapping targets and need a separate multi-horizon evaluator.
+        step_residuals = test_predictions_baseline[:, 0]
+        observed_close = pd.concat((training_data['Close'], test_data['Close'])).to_numpy().reshape(-1)
+        baselines = np.array([
+            causal_trend(observed_close[:len(training_data) + offset], trend_window)
+            for offset in range(len(step_residuals))
+        ])
+        predicted_prices = baselines + step_residuals
+        test_data = test_data.iloc[:len(step_residuals)]
         predictions_df = pd.DataFrame({stock.get_ticker() + '_predicted': predicted_prices}, index=test_data.index)
     else:
         predictions_df = pd.DataFrame(test_predictions_baseline, index=test_data.index)
