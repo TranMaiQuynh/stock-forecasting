@@ -34,7 +34,10 @@ class LongShortTermMemory:
         return defined_metrics
 
     def get_callback(self):
-        callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, mode='min', verbose=1)
+        callback = tf.keras.callbacks.EarlyStopping(
+            monitor='val_loss', patience=3, mode='min', verbose=1,
+            restore_best_weights=True,
+        )
         return callback
 
     def get_callbacks(self, version='v1'):
