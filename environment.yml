@@ -1,0 +1,10 @@
+name: stock-prediction
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      # Keep package versions in pyproject.toml; run conda env create from Git root.
+      - '-e .[research,dev]'

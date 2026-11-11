@@ -1,0 +1,40 @@
+name: Forecast research checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install offline test stack
+        run: |
+          python -m pip install numpy pandas scikit-learn matplotlib 'statsmodels>=0.14,<0.16' pytest ruff
+      - name: Lint and compile
+        run: |
+          ruff check quant_forecast_lab tests tests_runtime
+          python -m compileall -q quant_forecast_lab benchmarks *.py
+      - name: Run lightweight and offline integration tests
+        run: python -m pytest -q tests
+      - name: Run labelled synthetic demonstration
+        run: |
+          python -m quant_forecast_lab.cli benchmark --help
+          python -m quant_forecast_lab.cli arena --help
+          python -m quant_forecast_lab.cli experiment --synthetic --asset SYNTHETIC
+      - name: Preserve experiment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-research-evidence
+          path: log/
+          if-no-files-found: warn
+          retention-days: 7

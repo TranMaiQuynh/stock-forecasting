@@ -1,29 +1,58 @@
-# Python
+﻿# Python caches and quality tooling
 __pycache__/
 *.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environments and secrets
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+!.env.example
+
+# Editor / operating system state
+.vscode/
+.idea/
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+
+# Packaging
+build/
+dist/
 *.egg-info/
 
-# Env
-.env
-.vscode/
-vsgod/
-.venv/
+# Local data and generated experiment outputs
 data/
-data
+log/
+logs/
+runs/
+artifacts/
+checkpoints/
+output/
+experiments/
+reports/generated/
+benchmark-output/
+benchmark-results/
+notebook-artifact/
+*_20??????_*/
 
-# Output
+# Generated models and logs
 *.log
+*.keras
+*.h5
+*.pkl
 *.pt
 *.pth
 *.onnx
-checkpoints/
-output/
-experiments/ 
-logs/**/*.png
-logs/*.png
 
-.idea/
-
-# Private docs
+# Existing private documentation
 CAM_NANG_BAO_VE_DU_AN.md
 *cam_nang*
