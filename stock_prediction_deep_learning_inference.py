@@ -32,6 +32,7 @@ from pandas.tseries.offsets import BDay
 
 from quant_forecast_lab.experiment import sha256_file
 from quant_forecast_lab.legacy_keras import load_legacy_h5
+from quant_forecast_lab.reconstruction import causal_trend, recursive_residual_prices
 from quant_forecast_lab.uncertainty import symmetric_conformal_interval
 from stock_prediction_class import StockPrediction
 from stock_prediction_numpy import StockData
@@ -358,6 +359,7 @@ class InferenceRunner:
         conditional_return_predictions = []
         return_anchor_weights = []
         current_close = latest_close_price
+        generated_close_history = close_series.to_numpy(dtype=float).tolist()
 
         steps = len(future_dates)
         step_index = 0
@@ -431,7 +433,11 @@ class InferenceRunner:
                     break
                 predictions.append(pred_value)
                 if use_deltas or use_trend_residual:
-                    current_close = current_close + pred_value
+                    current_close = (
+                        causal_trend(generated_close_history, trend_window) + float(pred_value)
+                        if use_trend_residual else current_close + pred_value
+                    )
+                    generated_close_history.append(current_close)
                     next_scaled = _scale_input(input_scaler, pd.DataFrame({'Close': [current_close]}))
                     window_scaled = np.concatenate([window_scaled[:, 1:, :], next_scaled.reshape(1, 1, 1)], axis=1)
                 else:
@@ -453,7 +459,9 @@ class InferenceRunner:
                     raw_return_predictions,
                     latest_close_price,
                 )
-        elif use_deltas or use_trend_residual:
+        elif use_trend_residual:
+            predicted_prices_raw = recursive_residual_prices(predictions, close_series, trend_window)
+        elif use_deltas:
             predicted_prices_raw = latest_close_price + np.cumsum(predictions)
         else:
             predicted_prices_raw = predictions
@@ -468,6 +476,7 @@ class InferenceRunner:
             use_deltas,
             use_trend_residual,
             close_series,
+            trend_window=trend_window,
         )
 
         stochastic_summary = {}
@@ -657,6 +666,7 @@ class InferenceRunner:
         use_deltas,
         use_trend_residual,
         close_series,
+        trend_window=60,
     ):
         if self.stochastic_paths <= 0:
             return None
@@ -685,7 +695,10 @@ class InferenceRunner:
             paths = []
             for idx in range(self.stochastic_paths):
                 deltas = predictions + noise[idx]
-                prices = latest_close_price + np.cumsum(deltas)
+                prices = (
+                    recursive_residual_prices(deltas, close_series, trend_window)
+                    if use_trend_residual else latest_close_price + np.cumsum(deltas)
+                )
                 paths.append(self._blend_predictions(prices, latest_close_price))
             return np.asarray(paths)
         paths = []
