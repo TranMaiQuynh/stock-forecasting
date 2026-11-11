@@ -21,6 +21,8 @@ import pandas as pd
 import yfinance as yf
 from sklearn.preprocessing import MinMaxScaler
 
+from quant_forecast_lab.reconstruction import causal_trend
+
 
 class StockData:
     def __init__(self, stock):
@@ -65,15 +67,7 @@ class StockData:
         values = series.to_numpy()
         residuals = []
         for i in range(1, len(values)):
-            start = max(0, i - window)
-            y = values[start:i]
-            if len(y) < 2:
-                residuals.append(values[i] - values[i - 1])
-                continue
-            x = np.arange(len(y))
-            slope, intercept = np.polyfit(x, y, 1)
-            trend_next = slope * len(y) + intercept
-            residuals.append(values[i] - trend_next)
+            residuals.append(values[i] - causal_trend(values[:i], window))
         return pd.Series(residuals, index=series.index[1:])
 
     def _ensure_series(self, series_or_frame):
