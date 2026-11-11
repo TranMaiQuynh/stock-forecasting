@@ -8,6 +8,29 @@ as historical evidence. See the layout-cleanup record at the end of this file.
 Review date: 2026-11-11. Scope: imported Quant Forecast Lab source inside
 `D:/Github/StockForecasting`; parent Git branch `main`, HEAD `2557a56`.
 
+## Current execution (2026-11-12)
+
+Bootstrap publication is complete at `1e6769bda83291010567d25932b0b157f98a1d29`;
+the remote `main` SHA was independently checked after the push. Earlier index
+blockers below describe the historical import, not the current repository.
+The owner authorized the next implementation sequence on 2026-11-12. Future
+commits must change one file each and preserve passing intermediate states.
+
+| Task ID | Priority | Component | Issue | Action / acceptance criteria | Verification | Status | Commit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| G01 | P1 | Publication | Historical tracking predates the completed push | Record the published bootstrap and remove the active index blocker | Local/remote SHA matched; clean worktree | DONE | `1e6769b` |
+| T01 | P1 | Runtime | Python 3.13 cannot validate the declared legacy runtime | Create an isolated Python 3.12 environment; install declared dependencies; execute the full runtime suite | Pending environment installation | IN_PROGRESS | n/a |
+| L01 | P0 | Return reconstruction | Rolling-origin predictions may be compounded incorrectly | Verify input origins and repair reconstruction with hand-calculated regressions | Pending supported runtime | TODO | n/a |
+| L02 | P0 | Trend residual reconstruction | Residual inverse may use the wrong baseline | Reconstruct using the same causal trend definition as target construction | Pending supported runtime | TODO | n/a |
+| L03 | P1 | Checkpoint policy | Early stopping does not request the best validation weights | Verify saved prediction behavior and restore the declared best checkpoint | Pending supported runtime | TODO | n/a |
+| M01 | P1 | Market protocol | No identified market snapshot or frozen experiment specification | Record source, adjustment policy, checksum, time partitions and research-only scope before scoring | Pending acquisition | TODO | n/a |
+| W01 | P1 | Walk-forward | The new runner only has a fixed holdout | Extend existing runner/fold utilities with isolated folds, matched targets and complete artifacts | Fold isolation, reload and aggregation checks required | TODO | n/a |
+| A01 | P2 | Feature ablation | Feature contribution has not been measured | Evaluate one predefined causal feature group against minimal return history on the same development protocol | Report all folds and negative results; protect final holdout | TODO | n/a |
+
+The scope is CPU research and short verification runs. No paid resources, live
+trading or deployment are authorized. Market snapshots downloaded today may
+contain retrospective vendor revisions; no point-in-time correctness is claimed.
+
 ## Starting state and provenance
 
 - 82 imported files were already staged; `AGENTS.md` and
