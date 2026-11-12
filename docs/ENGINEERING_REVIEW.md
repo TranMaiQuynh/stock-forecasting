@@ -22,7 +22,7 @@ and offline use rather than retuning from the observed final holdout.
 | R02 | P1 | Clean replay | Full runtime depends on local ignored reference artifacts | Provision exact checksum-verified fixtures into a clean local clone and independent environment; run the complete suite and offline smoke | Final replay: 142 tests, all 14 stages, end-to-end offline prediction and clean source status | DONE | `26f01f1`, `235c404`, `f89ea08` |
 | R03 | P1 | Legacy scaler | Pickled 1.5.1 scaler was loaded under 1.9.1 | Export numerical scaler state under the original version; prefer validated JSON; save JSON in new training runs | 13 serializer tests; 20 runtime tests; original-version probes match at 1e-12, 3-step/12-column reference forecast max difference 0 | DONE | `58301eb`, `f99bb28`, `ab57ef2` |
 | R04 | P2 | Offline consumer | Saved numerical model had no complete batch prediction command | Add verified CSV-to-next-observation prediction without fitting; enforce asset, selection cutoff and immutable source | Artifact integrity/failure tests and 7 consumer/CLI tests pass; clean-checkout prediction and verification completed | DONE | `bca5f48`, `a087dd7`, `4b300d6`, `0724efc` |
-| R05 | P1 | Delivery checks | Hosted CI for this unpublished branch and clean replay are unverified | Validate locally from committed source; inspect available remote CI evidence; report publication/access dependencies accurately | Main commit 1e6769b has a verified successful hosted run; current branch has not been published | IN_PROGRESS | n/a |
+| R05 | P1 | Delivery checks | Hosted CI for this branch and clean replay were unverified | Validate committed source, publish the feature branch normally and inspect exact-SHA hosted CI | Remote SHA ddc26d0 matched local; hosted Linux offline CI succeeded; full Windows replay passed separately | DONE | `ddc26d0` |
 
 Completion scope is an auditable offline research/batch project. Production
 serving and a new market hypothesis remain separate roadmap decisions; no
@@ -54,11 +54,16 @@ Continuation evidence:
   verification for all 955 recorded artifacts. Prior results remain descriptive
   evidence at their original code commit, rather than claims about this new
   consumer's predictive improvement.
-- Hosted offline CI for main commit `1e6769b` was verified from GitHub's API:
-  [run 43061821900](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/43061821900).
-  The owner previously authorized pushing this repository; the continuation
-  branch will be published normally after final local checks and its hosted
-  result recorded separately. No force push or history rewrite is permitted.
+- The feature branch was published with the owner's existing push authorization.
+  Its exact remote SHA `ddc26d001f2aa9981d43c833c678a7e09b982c43` matched local;
+  [hosted run 43164635037](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/43164635037)
+  completed successfully. GitHub's API reported success for Linux offline
+  lint/compile, tests and the synthetic demo. This is separate from the full
+  Windows TensorFlow replay, not a claim of hosted neural-runtime coverage.
+  All 51 post-bootstrap commits through that SHA passed the one-file, owner
+  identity and commit-message audit. No generated models/datasets were tracked.
+  No force push, merge to main or history rewrite was performed. Local
+  publication receipts retain the final documentation SHA and CI result.
 
 Final target-scope assessment: the offline research/batch workflow is usable
 with the stated runtime and checksum-verified artifacts. Production readiness
@@ -165,7 +170,7 @@ historical 2026-11-11 review and must not override this current evidence.
 | Functional correctness | 3 | Runtime suite, adversarial transforms, real saved models and reload checks pass | Full upstream training/inference matrix and external competition workflows not replayed |
 | ML correctness | 3 | Train-only scaling/diagnostics, nested selection, matched origins, untouched final selection tests | Retrospective data, two surviving assets, no significance/robustness inference |
 | Reproducibility | 3 | Frozen protocol, pinned Windows versions, clean-clone replay, isolated environment and checksum-provisioned fixtures | No hash-locked cross-platform environment; raw datasets remain local; vendor revisions possible |
-| Testing/reliability | 3 | 142 tests from a clean checkout; failures retained; actual optimizer/reload smoke; legacy scaler numerical parity | Full Linux neural runtime and GPU behavior unverified; third-party warnings remain; current branch CI tracked in R05 |
+| Testing/reliability | 3 | 142 tests from a clean checkout; Linux hosted offline CI; actual optimizer/reload smoke; legacy scaler numerical parity | Full Linux neural runtime and GPU behavior unverified; third-party warnings remain |
 | E2E pipeline | 3 | Acquisition to walk-forward/ablation, final scoring/report and verified saved-model CSV prediction executed | Neural training not integrated into this experiment lifecycle; only close-derived features |
 | Deployment | 1 | Usable offline batch CLI with verified model lineage and explicit failure contracts | No service SLO, deployment, operational monitoring, rollback or live execution |
 | Documentation/DX | 3 | Quickstart, learner guide, measured results, fixture provisioning and clean-replay command | New machine still needs authorized reference fixtures/snapshots and prepared dependency cache for exact offline replay |
@@ -180,23 +185,20 @@ Recommendation: **continue with narrow scope**, keeping the zero-return baseline
 
 Remaining prioritized roadmap:
 
-1. P1: complete R05 publication and hosted offline CI verification on this
-   branch. Gate: exact remote SHA and successful hosted run recorded; no
-   reference binaries or vendor snapshots uploaded.
-2. P1, separate research scope: define one new hypothesis on development data
+1. P1, separate research scope: define one new hypothesis on development data
    only and register an
    evaluation using an actually unused final period before viewing it. Gate:
    all predefined folds/assets and negative results reported; no reuse of this
    final holdout as untouched after result-driven changes.
-3. P2, conditional: if needed, integrate one existing neural model into the same lifecycle,
+2. P2, conditional: if needed, integrate one existing neural model into the same lifecycle,
    with bounded CPU training and fair trial budgets. Gate: full training/selection
    and reload tests, comparable origins, complete real-run evidence.
-4. P2, conditional on an actual operating requirement: measure a representative
+3. P2, conditional on an actual operating requirement: measure a representative
    batch consumer's latency/resource budget before adding serving/monitoring.
    Gate: stated workload, measured resource use and operational failure policy.
 
-R02-R04 complete the previously pending clean replay, scaler compatibility and
-offline consumer gates. Later research/serving proposals are not implemented
+R02-R05 complete the previously pending clean replay, scaler compatibility,
+offline consumer and delivery gates. Later research/serving proposals are not implemented
 capabilities or prerequisites for the agreed offline research/batch handoff.
 
 ## Starting state and provenance
