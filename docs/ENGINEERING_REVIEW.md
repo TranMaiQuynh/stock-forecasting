@@ -23,9 +23,10 @@ commits must change one file each and preserve passing intermediate states.
 | L01 | P0 | Return reconstruction | Rolling-origin predictions were compounded incorrectly | Use each observed origin close for its one-step inverse | Zero-return historical regression failed before and passed after; runtime compatibility passed | DONE | `3731812` |
 | L02 | P0 | Trend residual reconstruction | Historical and recursive inverses used prior close instead of the fitted trend | Share causal trend target definition; reconstruct from observed/generated history in the appropriate mode | Historical horizons 1/2, recursive inference and noise-free simulated paths verified | DONE | `3731812`, `f6ccfd1`, `7b1a908` |
 | L03 | P1 | Checkpoint policy | Saved weights were the final epoch rather than the best validation epoch | Restore best weights on training end, then save | Real Keras save/reload checks failed before and passed after, with and without patience exhaustion | DONE | `805e49e`, `fe7cfff` |
-| M01 | P1 | Market protocol | No identified market snapshot or frozen experiment specification | Record source, adjustment policy, checksum, time partitions and research-only scope before scoring | Pending acquisition | TODO | n/a |
-| W01 | P1 | Walk-forward | The new runner only has a fixed holdout | Extend existing runner/fold utilities with isolated folds, matched targets and complete artifacts | Fold isolation, reload and aggregation checks required | TODO | n/a |
-| A01 | P2 | Feature ablation | Feature contribution has not been measured | Evaluate one predefined causal feature group against minimal return history on the same development protocol | Report all folds and negative results; protect final holdout | TODO | n/a |
+| M01 | P1 | Market protocol | No identified market snapshot or frozen experiment specification | Freeze protocol before acquisition; retain two identified adjusted-close snapshots with hashes | 2,766 observations/asset; source/options/hash checks; final market run independently verified | DONE | `b86dcf7`, `640e908`, `9f49704` |
+| W01 | P1 | Walk-forward | The new runner only had a fixed holdout | Reuse the existing runner/fold utilities; isolated child models/scalers, matched targets, final holdout after group selection | Fold isolation, no-overlap, metric recomputation, offline/failure checks; all 109 tests pass | DONE | `8f463ac`, `6032389`, `4be060f` |
+| A01 | P2 | Feature ablation | Feature contribution had not been measured | Compare signed returns with signed plus absolute returns on the frozen development protocol | 8 folds/asset, 204 Ridge trials; extra group worse in development; both selected models worse on final holdout | DONE | `cfec2a4`, `9138b8c`, `9f49704` |
+| H01 | P1 | Nested provenance | Parent manifests excluded all files named manifest.json, including child manifests | Exclude only the parent's own manifest; hash child manifests | Targeted nested-manifest regression and full experiment integrity checks pass | DONE | `b352fe1`, `fdc92ee` |
 
 The scope is CPU research and short verification runs. No paid resources, live
 trading or deployment are authorized. Market snapshots downloaded today may
@@ -46,6 +47,96 @@ Ridge, matched targets, a predefined absolute-return feature group, chronologica
 development folds and a final holdout beginning 2023. It explicitly documents
 survivor selection and retrospective data limitations. No result-based protocol
 changes or automatic trading/model promotion are permitted in this experiment.
+
+### Completed execution and measured outcome
+
+The full final suite returned **109 passed, 24 warnings**, with no exclusions:
+`.venv/runtime312/Scripts/python.exe -m pytest -q -o addopts= tests tests_runtime`.
+Evidence: `log/validation_20261112/final_tests.txt`. Ruff and compilation checks
+passed for maintained source/tests and the new benchmark runner. The extra
+one-optimizer-step smoke used real v1/v6/v9 models, verified finite losses and
+save/reload prediction agreement; see `log/validation_20261112/neural_smoke/`.
+It is not a neural training benchmark. Checkpoint regression tests drive
+controlled validation-loss callback events on real Keras models, then save/reload.
+
+Market run: `log/market_protocol/20261112T033204_275096Z_904ed2d6/`, executed from
+clean code commit `3d40d9108437f42b9115014535e89cfaf543e44d`. All 37 run manifests
+were completed and clean at execution; 2,783 artifact checksum comparisons,
+package source hashes, exact trial counts and independent RMSE/MAE/baseline
+recalculations passed. Receipt: `log/validation_20261112/market_verification.json`.
+The 204 trials are 102 per asset, not 204 neural training jobs.
+
+Each asset has eight complete development folds and 752 final targets from
+2023-01-03 to 2025-12-31. The final 124 development observations cannot form
+another complete 126-target fold and are explicitly reported as an unscored
+development tail; final validation can still use the pre-holdout observations.
+The final model is frozen across the final holdout, with observed prior history
+updating inputs at each origin. It is not retrained daily.
+
+| Asset | Selected group | Final lookback / alpha | Final log-return RMSE | Zero-return RMSE | Final skill |
+| --- | --- | --- | --- | --- | --- |
+| AAPL | returns | 5 / 1 | 0.0162583524 | 0.0161022539 | -0.969420% |
+| MSFT | returns | 1 / 10 | 0.0147596636 | 0.0145742149 | -1.272444% |
+
+Development RMSE skill was positive for signed returns (AAPL 1.1250%, MSFT
+1.9080%), but the extra absolute-return group performed worse in development
+and was not selected. Neither selected model beat zero return on the final
+holdout. Decision: no additional feature retention for this protocol and no
+model promotion. Do not retune using the inspected final holdout. These results
+are descriptive, not a significance test or evidence about all markets/models.
+
+Published aggregate evidence:
+[measured JSON](../benchmarks/results/2026-11-12-reference-ridge.json) and
+[plot](../benchmarks/results/2026-11-12-reference-ridge.png). Raw vendor data,
+snapshots, reference models and complete run logs remain local/ignored. Exact
+snapshot replay is available locally; a fresh clone needs those snapshots or
+new downloads, which may contain vendor revisions. Neural market benchmarking,
+calibrated uncertainty, execution simulation and deployment remain unimplemented
+or unverified in this new runner. No hosted CI success is claimed.
+
+### Independent reassessment after this execution
+
+Scores concern the whole repository, including inherited components, rather
+than only the verified Ridge path. Earlier assessment sections below are the
+historical 2026-11-11 review and must not override this current evidence.
+
+| Dimension | Score / 5 | Evidence | Remaining weakness / next gate |
+| --- | --- | --- | --- |
+| Architecture | 3 | Snapshot acquisition, offline estimator, fold orchestration and CLI have separate responsibilities | Legacy training scripts still couple I/O, training and reporting; migrate only as needed |
+| Code quality | 3 | Small verified fixes, shared causal inverse, strict schema/feature-order contracts | Partial typing coverage; no repository-wide static type gate |
+| Functional correctness | 3 | Runtime suite, adversarial transforms, real saved models and reload checks pass | Full upstream training/inference matrix and external competition workflows not replayed |
+| ML correctness | 3 | Train-only scaling/diagnostics, nested selection, matched origins, untouched final selection tests | Retrospective data, two surviving assets, no significance/robustness inference |
+| Reproducibility | 3 | Frozen protocol, pinned tested Windows versions, clean code hash, immutable snapshots and child hashes | No hash-locked cross-platform environment; raw datasets remain local; vendor revisions possible |
+| Testing/reliability | 3 | 109 tests on supported Python/TensorFlow; failures retained; actual optimizer/reload smoke | Hosted CI, full Linux neural runtime and GPU behavior unverified; third-party warnings remain |
+| E2E pipeline | 3 | Acquisition to walk-forward/ablation, final scoring, artifact reload and report executed | Neural training not integrated into this experiment lifecycle; only close-derived features |
+| Deployment | 1 | Reusable numerical inference artifacts and explicit error contracts | No service SLO, deployment, operational monitoring, rollback or live execution |
+| Documentation/DX | 3 | Current quickstart, learner guide, protocol, measured results and audit | New clone needs local reference fixtures/snapshots for exact replay |
+| Practical/portfolio value | 2 | Defensible methodology, falsifiable contribution and honest negative results | No demonstrated final forecasting advantage, trading utility or user validation |
+
+Technical verdict: a validated small research prototype with meaningful runtime,
+evaluation and provenance improvements. ML Engineering verdict: demonstrates
+temporal isolation, testing, data lineage and controlled experiments; not a
+complete production lifecycle. Practical value is research/learning, while
+market utility remains unproven. Production readiness: **not ready**.
+Recommendation: **continue with narrow scope**, keeping the zero-return baseline.
+
+Remaining prioritized roadmap:
+
+1. P1: clean-checkout replay with provisioned, checksum-verified reference
+   fixtures/snapshots. Gate: documented Windows reconstruction plus a successful
+   hosted offline CI run; do not upload vendor datasets without usage clearance.
+2. P1: resolve the legacy scaler version warning using a verified compatible
+   environment or regenerated artifacts, without silently ignoring it. Gate:
+   original/scoped reference prediction parity with explicit tolerances.
+3. P1: define one new hypothesis on development data only and register an
+   evaluation using an actually unused final period before viewing it. Gate:
+   all predefined folds/assets and negative results reported; no reuse of this
+   final holdout as untouched after result-driven changes.
+4. P2: if needed, integrate one existing neural model into the same lifecycle,
+   with bounded CPU training and fair trial budgets. Gate: full training/selection
+   and reload tests, comparable origins, complete real-run evidence.
+5. P2: choose a concrete batch consumer before adding serving/monitoring. Gate:
+   measurable input contract, latency/resource budget and failure handling.
 
 ## Starting state and provenance
 
