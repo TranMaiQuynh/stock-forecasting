@@ -11,6 +11,20 @@ from .arena import arena_frame, render_html_report
 from .benchmark import benchmark_frame
 
 
+def _add_research_options(parser):
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--csv", help="Single-asset Date,Close CSV; no network download.")
+    source.add_argument("--synthetic", action="store_true", help="Labelled smoke data, not a market benchmark.")
+    parser.add_argument("--asset", default="UNSPECIFIED")
+    parser.add_argument("--data-kind", choices=["user_supplied", "market", "synthetic"], default="user_supplied")
+    parser.add_argument("--lookbacks", nargs="+", type=int, default=[1, 5, 10])
+    parser.add_argument("--ridge-alphas", nargs="+", type=float, default=[1.0, 10.0])
+    parser.add_argument("--max-analysis-lag", type=int, default=20)
+    parser.add_argument("--diagnostic-alpha", type=float, default=0.05)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--output-root", default="log")
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="quant-forecast")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -59,41 +73,82 @@ def _build_parser() -> argparse.ArgumentParser:
     arena.add_argument("--title", default="Financial Forecasting Arena")
 
     experiment = subparsers.add_parser("experiment", help="Run an offline one-step log-return reference experiment.")
-    source = experiment.add_mutually_exclusive_group(required=True)
-    source.add_argument("--csv", help="Single-asset Date,Close CSV; no network download.")
-    source.add_argument(
-        "--synthetic", action="store_true", help="Labelled synthetic smoke run, not a market benchmark."
-    )
-    experiment.add_argument("--asset", default="UNSPECIFIED")
-    experiment.add_argument("--data-kind", choices=["user_supplied", "market", "synthetic"], default="user_supplied")
-    experiment.add_argument("--lookbacks", nargs="+", type=int, default=[1, 5, 10])
-    experiment.add_argument("--ridge-alphas", nargs="+", type=float, default=[1.0, 10.0])
-    experiment.add_argument("--max-analysis-lag", type=int, default=20)
-    experiment.add_argument("--diagnostic-alpha", type=float, default=0.05)
+    _add_research_options(experiment)
     experiment.add_argument("--train-fraction", type=float, default=0.6)
     experiment.add_argument("--validation-fraction", type=float, default=0.2)
-    experiment.add_argument("--seed", type=int, default=42)
-    experiment.add_argument("--output-root", default="log")
+    experiment.add_argument("--feature-group", choices=["returns", "returns_abs"], default="returns")
+
+    walk = subparsers.add_parser(
+        "walk-forward", help="Compare feature groups on development folds, then score a final holdout."
+    )
+    _add_research_options(walk)
+    walk.add_argument("--min-train-size", type=int, default=756)
+    walk.add_argument("--validation-size", type=int, default=126)
+    walk.add_argument("--test-size", type=int, default=126)
+    walk.add_argument("--final-holdout-start", help="First final-holdout session date, e.g. 2023-01-01.")
+    walk.add_argument(
+        "--final-holdout-fraction", type=float, default=0.2, help="Used only when no holdout date is supplied."
+    )
+    walk.add_argument(
+        "--feature-groups", nargs="+", choices=["returns", "returns_abs"], default=["returns", "returns_abs"]
+    )
+
+    acquire = subparsers.add_parser(
+        "acquire", help="Download and validate a daily adjusted Yahoo snapshot (requires network)."
+    )
+    acquire.add_argument("--asset", required=True)
+    acquire.add_argument("--start", required=True)
+    acquire.add_argument("--end", required=True, help="Exclusive end date.")
+    acquire.add_argument("--output-root", default="log")
     return parser
 
 
 def main(argv=None) -> int:
     args = _build_parser().parse_args(argv)
 
-    if args.command == "experiment":
+    if args.command == "acquire":
+        from .market_data import acquire_market_snapshot
+
+        output = acquire_market_snapshot(args.asset, args.start, args.end, output_root=args.output_root)
+        print(f"Snapshot: {output}")
+        return 0
+
+    if args.command in {"experiment", "walk-forward"}:
         from .research import ResearchConfig, run_offline_experiment
 
         config = ResearchConfig(
             asset=args.asset,
             lookbacks=tuple(args.lookbacks),
             ridge_alphas=tuple(args.ridge_alphas),
-            train_fraction=args.train_fraction,
-            validation_fraction=args.validation_fraction,
+            train_fraction=getattr(args, "train_fraction", 0.6),
+            validation_fraction=getattr(args, "validation_fraction", 0.2),
             max_analysis_lag=args.max_analysis_lag,
             diagnostic_alpha=args.diagnostic_alpha,
             seed=args.seed,
+            feature_group=getattr(args, "feature_group", "returns"),
         )
-        output = run_offline_experiment(args.csv, output_root=args.output_root, config=config, data_kind=args.data_kind)
+        if args.command == "walk-forward":
+            from .walk_forward import WalkForwardConfig, run_walk_forward_experiment
+
+            walk_config = WalkForwardConfig(
+                min_train_size=args.min_train_size,
+                validation_size=args.validation_size,
+                test_size=args.test_size,
+                final_holdout_start=args.final_holdout_start,
+                final_holdout_fraction=args.final_holdout_fraction,
+                feature_groups=tuple(args.feature_groups),
+            )
+            output = run_walk_forward_experiment(
+                args.csv,
+                output_root=args.output_root,
+                config=config,
+                walk_config=walk_config,
+                data_kind=args.data_kind,
+            )
+        else:
+            output = run_offline_experiment(
+                args.csv, output_root=args.output_root, config=config, data_kind=args.data_kind
+            )
         print(f"Run: {output}")
         return 0
 
