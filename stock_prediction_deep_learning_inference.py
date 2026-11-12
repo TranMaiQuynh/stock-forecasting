@@ -33,12 +33,16 @@ from pandas.tseries.offsets import BDay
 from quant_forecast_lab.experiment import sha256_file
 from quant_forecast_lab.legacy_keras import load_legacy_h5
 from quant_forecast_lab.reconstruction import causal_trend, recursive_residual_prices
+from quant_forecast_lab.scalers import load_minmax_scaler
 from quant_forecast_lab.uncertainty import symmetric_conformal_interval
 from stock_prediction_class import StockPrediction
 from stock_prediction_numpy import StockData
 
 
 def _load_scaler(inference_folder):
+    json_path = os.path.join(inference_folder, 'min_max_scaler.json')
+    if os.path.exists(json_path):
+        return load_minmax_scaler(json_path)
     scaler_path = os.path.join(inference_folder, 'min_max_scaler.pkl')
     if not os.path.exists(scaler_path):
         return None
@@ -47,6 +51,9 @@ def _load_scaler(inference_folder):
 
 
 def _load_input_scaler(inference_folder):
+    json_path = os.path.join(inference_folder, 'input_scaler.json')
+    if os.path.exists(json_path):
+        return load_minmax_scaler(json_path)
     scaler_path = os.path.join(inference_folder, 'input_scaler.pkl')
     if not os.path.exists(scaler_path):
         return None
@@ -336,10 +343,10 @@ class InferenceRunner:
         if use_deltas or use_trend_residual:
             input_scaler = _load_input_scaler(inference_folder)
             if input_scaler is None:
-                raise FileNotFoundError('input_scaler.pkl is required for reproducible inference. Re-export the training scaler with the model.')
+                raise FileNotFoundError('input_scaler.json or its trusted legacy .pkl is required for reproducible inference.')
 
         if scaler is None:
-            raise FileNotFoundError('min_max_scaler.pkl is required for reproducible inference. Re-export the training scaler with the model.')
+            raise FileNotFoundError('min_max_scaler.json or its trusted legacy .pkl is required for reproducible inference.')
 
         if use_deltas or use_trend_residual:
             window_scaled = _scale_input(input_scaler, recent_window)
