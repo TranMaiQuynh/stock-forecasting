@@ -87,3 +87,46 @@ def test_failed_child_retains_failed_parent_and_does_not_select_or_score_final(t
 def test_invalid_fold_sizes_are_rejected(value):
     with pytest.raises(ValueError):
         WalkForwardConfig(test_size=value).validate()
+
+
+def test_cli_routes_walk_forward_settings_without_changing_the_protocol(tmp_path, monkeypatch):
+    import quant_forecast_lab.walk_forward as module
+    from quant_forecast_lab.cli import main
+
+    captured = {}
+
+    def run(input_csv, **kwargs):
+        captured.update(kwargs)
+        assert input_csv is None
+        return tmp_path
+
+    monkeypatch.setattr(module, "run_walk_forward_experiment", run)
+    assert (
+        main(
+            [
+                "walk-forward",
+                "--synthetic",
+                "--asset",
+                "SMOKE",
+                "--min-train-size",
+                "40",
+                "--validation-size",
+                "10",
+                "--test-size",
+                "20",
+                "--final-holdout-start",
+                "2023-01-01",
+                "--lookbacks",
+                "1",
+                "3",
+                "--feature-groups",
+                "returns",
+                "--output-root",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+    assert captured["walk_config"].final_holdout_start == "2023-01-01"
+    assert captured["walk_config"].feature_groups == ("returns",)
+    assert captured["config"].lookbacks == (1, 3)
