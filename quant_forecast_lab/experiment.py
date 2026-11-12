@@ -144,6 +144,6 @@ def tracked_run(output_root, model_name: str, config: dict):
         manifest["artifact_sha256"] = {
             p.relative_to(root).as_posix(): sha256_file(p)
             for p in sorted(root.rglob("*"))
-            if p.is_file() and p.name != "manifest.json"
+            if p.is_file() and p != root / "manifest.json"
         }
         write_json(root / "manifest.json", manifest)
