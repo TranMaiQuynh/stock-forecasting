@@ -10,14 +10,17 @@ Giữ nguyên [LICENSE Apache-2.0 của upstream](LICENSE)
 và [CITATION](CITATION.cff).
 Các kết quả lịch sử trong tài liệu upstream chưa được tái lập ở workspace này.
 
-Phiên bản phát triển hiện có một pipeline nghiên cứu offline:
+Phiên bản phát triển hiện có pipeline nghiên cứu offline và walk-forward:
 CSV một tài sản → kiểm tra dữ liệu → chia theo thời gian →
 ADF/KPSS và ACF/PACF trên training → thử lookback/Ridge alpha →
-chọn bằng validation → chấm final test → lưu artifact và nạp lại để dự báo.
+chọn bằng validation → so sánh nhóm feature trên development folds →
+chấm final holdout → lưu artifact và nạp lại để dự báo.
 
 Bằng chứng, quyết định và công việc còn lại:
 [Engineering review](docs/ENGINEERING_REVIEW.md).
 Các lệnh LSTM kế thừa được lưu trong [Upstream guide](docs/UPSTREAM_GUIDE.md).
+Giải thích từ dữ liệu, thuật ngữ đến quyết định và bài tập:
+[Learning guide](docs/LEARNING_GUIDE.md).
 
 ## Cấu trúc dự án
 
@@ -33,6 +36,7 @@ StockForecasting/               # Git root: chạy lệnh tại đây
 ├── .github/                    # CI và mẫu issue/PR
 ├── stock_prediction_*.py       # Entry points LSTM kế thừa, giữ tên tương thích
 ├── pyproject.toml              # Khai báo package và dependency chính
+├── constraints-win-py312.txt   # Phiên bản dependency đã xác minh trên Windows
 ├── requirements.txt            # Cài package từ pyproject.toml
 ├── environment.yml             # Tạo Python 3.12 bằng Conda nếu sử dụng
 ├── LICENSE / CITATION.cff      # Giấy phép và ghi nhận nguồn
@@ -42,17 +46,24 @@ StockForecasting/               # Git root: chạy lệnh tại đây
 ## Chạy từ source trên PowerShell
 
 Runtime đầy đủ của upstream yêu cầu Python 3.11 hoặc 3.12 và
-TensorFlow 2.18.1. Môi trường hiện tại chỉ có Python 3.13.3:
-đã kiểm tra phần offline, chưa xác nhận runtime TensorFlow.
+TensorFlow 2.18.1. Đã tạo môi trường riêng `.venv/runtime312` và xác minh
+Python 3.12.16 / TensorFlow 2.18.1 trên CPU: **109 tests đạt**, gồm runtime tests.
+V1/v6/v9 cũng đã chạy một bước tối ưu hóa thật và kiểm tra lưu/nạp artifact;
+đây chưa phải huấn luyện hay tái lập benchmark thị trường của LSTM upstream.
 
-Khi có Python 3.12, chạy từ Git root:
+Trong workspace hiện tại, chạy từ Git root:
 
 ~~~powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m pytest -q tests
-.\.venv\Scripts\python.exe -m quant_forecast_lab.cli experiment --synthetic --asset SYNTHETIC
+.\.venv\runtime312\Scripts\python.exe -m pytest -q -o addopts= tests tests_runtime
+.\.venv\runtime312\Scripts\python.exe -m quant_forecast_lab.cli experiment --synthetic --asset SYNTHETIC
 ~~~
+
+Để tạo lại trên Windows khi đã có Python 3.12 hệ thống, dùng
+`py -3.12 -m venv .venv/runtime312`, rồi cài bằng Python của môi trường đó:
+`python -m pip install -r requirements.txt -c constraints-win-py312.txt`.
+File constraints ghi phiên bản đã kiểm chứng, không phải lockfile đa nền tảng
+hay có hash. Python được tải local ở `log/toolchains` trong workspace hiện tại;
+không xóa thư mục này khi còn dùng môi trường dựa trên nó.
 
 Nếu chỉ cần phần offline, cài stack nhẹ trong môi trường riêng:
 
@@ -94,9 +105,61 @@ Validation chọn cấu hình Ridge. Không refit; final test không chọn tham
 Baseline return bằng 0 tương ứng giữ nguyên giá gần nhất.
 
 ACF/PACF ghi ứng viên và interval theo từng lag; chúng không tự quyết định
-lookback hoặc hyperparameters. Model hiện chỉ dùng lịch sử log-return,
-chưa có ablation nhóm technical/macro features hoặc walk-forward training
-trong runner mới.
+lookback hoặc hyperparameters. Hai nhóm hiện hỗ trợ là `returns` (L biến)
+và `returns_abs` (2L biến gồm return và trị tuyệt đối của cùng các return).
+Chưa thêm nhóm technical/macro hoặc volume.
+
+## Walk-forward và thí nghiệm thị trường
+
+Smoke walk-forward không cần mạng hoặc TensorFlow:
+
+~~~powershell
+python -m quant_forecast_lab.cli walk-forward --synthetic --asset SYNTHETIC --lookbacks 1 3 --ridge-alphas 1 --max-analysis-lag 5 --min-train-size 80 --validation-size 20 --test-size 60
+~~~
+
+Mỗi development fold có training, inner validation và phần chấm ngoài mẫu.
+Validation chọn lookback/alpha; các development folds chọn nhóm feature.
+Final holdout được chấm sau đó, không refit và không dùng để tuning.
+Mỗi child run có scaler, diagnostics, trial log và model riêng. Các target được
+chấm không chồng lấn giữa fold, các nhóm được so sánh trên cùng thời điểm.
+
+Thu thập dữ liệu là lệnh riêng, có truy cập mạng và cần yfinance:
+
+~~~powershell
+python -m quant_forecast_lab.cli acquire --asset AAPL --start 2015-01-01 --end 2026-01-01
+~~~
+
+`--end` là ngày kết thúc exclusive. Snapshot lưu giá điều chỉnh, bản vendor,
+tùy chọn tải và checksum. Chưa xác minh point-in-time hoặc tính đầy đủ lịch sàn.
+Không dùng giá điều chỉnh này như giá có thể khớp lệnh thực tế.
+
+Protocol đã khóa trước thí nghiệm:
+[return_history_ablation.json](benchmarks/protocols/return_history_ablation.json).
+Tái chạy từ các snapshot local hiện có, không tải lại:
+
+~~~powershell
+.\.venv\runtime312\Scripts\python.exe benchmarks\run_reference_research.py --snapshots log\validation_20261112\market_snapshots.json
+~~~
+
+File mapping JSON chứa tên mã → thư mục snapshot do `acquire` tạo. Nó và dữ liệu
+raw được Git ignore; clone mới phải cung cấp snapshot/mapping riêng. Tải lại
+vendor có thể thay đổi giá lịch sử, nên muốn tái lập đúng phải giữ CSV gốc.
+
+Kết quả ngày 12/11/2026: 8 development folds/mã, tổng 204 trial; final holdout
+03/01/2023–31/12/2025 có 752 target/mã. Nhóm `returns_abs` không cải thiện
+development so với `returns`; cả hai model cuối kém baseline zero return:
+
+| Mã | Lookback / alpha cuối | Final RMSE log-return | Baseline RMSE | RMSE skill |
+| --- | --- | --- | --- | --- |
+| AAPL | 5 / 1 | 0.01625835 | 0.01610225 | -0.9694% |
+| MSFT | 1 / 10 | 0.01475966 | 0.01457421 | -1.2724% |
+
+`skill = 1 - RMSE_model/RMSE_baseline`; số âm nghĩa model có sai số lớn hơn.
+Không promote model hoặc tuning lại từ final holdout đã xem. Hai mã được chọn
+trước, không đại diện toàn thị trường; chưa kiểm định ý nghĩa thống kê.
+Số liệu, provenance và giới hạn: [measured report](benchmarks/results/2026-11-12-reference-ridge.json).
+
+![Development và final holdout](benchmarks/results/2026-11-12-reference-ridge.png)
 
 ## Log và artifact
 
@@ -119,9 +182,14 @@ Artifact JSON được nạp lại và đối chiếu dự báo ở mọi test o
 Dự báo tương lai chưa có actual và chưa đoán ngày giao dịch kế tiếp.
 Run thất bại giữ traceback và trạng thái failed.
 
-Dữ liệu tổng hợp dùng kiểm tra kỹ thuật, không phải benchmark thị trường.
-Chưa chứng minh lợi thế dự báo trên thị trường hoặc khả năng sinh lợi.
-Runner mới chưa có calibrated uncertainty, trading execution hoặc deployment.
+Run walk-forward ở `log/walk_forward_ridge/<run_id>/` có `selection.json`,
+`fold_metrics.csv`, development/final predictions và thư mục child runs.
+Runner protocol tổng lưu ở `log/market_protocol/<run_id>/`; manifest tổng bao
+gồm checksum manifest con. Báo cáo đã kiểm tra 37 manifest và 2.783 lượt checksum.
+
+Dữ liệu tổng hợp dùng kiểm tra kỹ thuật; kết quả thị trường được gắn nhãn riêng.
+Thí nghiệm mới chưa chứng minh lợi thế trên final holdout hoặc khả năng sinh lợi.
+Runner chưa có calibrated uncertainty, trading execution hoặc deployment.
 
 ## Kiểm tra chất lượng và học tập
 
@@ -133,13 +201,16 @@ python -m quant_forecast_lab.cli --help
 ~~~
 
 `tests_runtime` cần đầy đủ TensorFlow và fixture; test nhẹ không thay thế
-việc chạy bộ này. Workflow ở Git root kiểm tra phần offline trên Python
-3.12; chưa xác minh một lần chạy GitHub Actions trong phiên local.
+việc chạy bộ này. Bộ runtime local đã đạt, nhưng scaler reference có cảnh báo
+khác phiên bản scikit-learn; chưa tuyên bố tái lập chính xác kết quả upstream.
+Workflow ở Git root kiểm tra phần offline trên Python 3.12; hosted GitHub Actions
+vẫn chưa được xác minh trong phiên này và reference fixtures chưa nằm trong Git.
 
 Phần kế thừa gồm kiến trúc LSTM, data/training scripts, evaluation utilities
 và các thí nghiệm lịch sử. Phần phát triển tại workspace này gồm sửa lỗi
-đánh giá/drawdown/uncertainty, training diagnostics, vòng đời run và pipeline
-offline có kiểm tra leakage. Chưa tuyên bố tính mới nghiên cứu.
+đánh giá/drawdown/uncertainty/khôi phục giá/checkpoint, training diagnostics,
+vòng đời run, walk-forward, snapshot provenance và ablation có kiểm tra leakage.
+Chưa tuyên bố tính mới nghiên cứu hoặc mức sẵn sàng production.
 
 Bài tập người học: dùng một chuỗi sáu mức giá để tính tay hai return inputs
 và next-return target; đối chiếu `return_windows` và
