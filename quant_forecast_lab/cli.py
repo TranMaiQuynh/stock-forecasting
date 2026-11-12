@@ -100,11 +100,36 @@ def _build_parser() -> argparse.ArgumentParser:
     acquire.add_argument("--start", required=True)
     acquire.add_argument("--end", required=True, help="Exclusive end date.")
     acquire.add_argument("--output-root", default="log")
+
+    verify = subparsers.add_parser("verify-run", help="Verify the inventory and checksums of a completed run.")
+    verify.add_argument("--run-dir", required=True)
+
+    predict = subparsers.add_parser(
+        "predict", help="Predict the next observation from a saved numerical model and CSV history."
+    )
+    predict.add_argument("--run-dir", required=True, help="Completed ridge_log_return child run containing the model.")
+    predict.add_argument("--csv", required=True)
+    predict.add_argument("--asset", required=True, help="Must match the source model asset.")
+    predict.add_argument("--output-root", default="log")
     return parser
 
 
 def main(argv=None) -> int:
     args = _build_parser().parse_args(argv)
+
+    if args.command == "verify-run":
+        from .artifacts import verify_run
+
+        print(json.dumps(verify_run(args.run_dir), indent=2))
+        return 0
+
+    if args.command == "predict":
+        from .forecast import run_saved_forecast
+
+        output = run_saved_forecast(args.run_dir, args.csv, asset=args.asset, output_root=args.output_root)
+        result = json.loads((output / "forecast.json").read_text(encoding="utf-8"))
+        print(json.dumps({"run_directory": str(output), **result}, indent=2))
+        return 0
 
     if args.command == "acquire":
         from .market_data import acquire_market_snapshot
