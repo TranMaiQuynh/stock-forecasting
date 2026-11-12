@@ -10,6 +10,25 @@ Review date: 2026-11-11. Scope: imported Quant Forecast Lab source inside
 
 ## Current execution (2026-11-12)
 
+### Continuation: reproducible research handoff
+
+The owner requested continuation from the remaining roadmap. The starting tree
+is clean on `fix/forecasting-validation` at `d0284ed`. The completed market
+protocol/results above remain frozen; this continuation improves reproducibility
+and offline use rather than retuning from the observed final holdout.
+
+| Task ID | Priority | Component | Issue | Action / acceptance criteria | Verification | Status | Commit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| R02 | P1 | Clean replay | Full runtime depends on local ignored reference artifacts | Provision exact checksum-verified fixtures into an isolated source export and independent environment; run the complete suite and offline smoke | Pending provisioned replay | TODO | n/a |
+| R03 | P1 | Legacy scaler | Pickled 1.5.1 scaler is loaded under 1.9.1 | Export numerical scaler state under the original version; verify transforms and model-output parity; prefer validated JSON without changing legacy weights | Baseline and original-version environment preparation | IN_PROGRESS | n/a |
+| R04 | P2 | Offline consumer | Saved numerical model has a Python interface but no complete batch prediction command | Add CSV-to-next-observation prediction using the existing artifact contract, baseline comparison and tracked outputs; reject incompatible/corrupt inputs | Offline integration, input/alignment and failure-state checks required | TODO | n/a |
+| R05 | P1 | Delivery checks | Hosted CI for this unpublished branch and clean replay are unverified | Validate locally from exported committed source; inspect available remote CI evidence; report any publication/access dependency accurately | Pending delivery verification | TODO | n/a |
+
+Completion scope is an auditable offline research/batch project. Production
+serving and a new market hypothesis remain separate roadmap decisions; no
+positive forecasting claim or reuse of the old final holdout is authorized by
+successful engineering validation.
+
 Bootstrap publication is complete at `1e6769bda83291010567d25932b0b157f98a1d29`;
 the remote `main` SHA was independently checked after the push. Earlier index
 blockers below describe the historical import, not the current repository.
