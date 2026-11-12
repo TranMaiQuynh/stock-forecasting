@@ -19,10 +19,10 @@ commits must change one file each and preserve passing intermediate states.
 | Task ID | Priority | Component | Issue | Action / acceptance criteria | Verification | Status | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | G01 | P1 | Publication | Historical tracking predates the completed push | Record the published bootstrap and remove the active index blocker | Local/remote SHA matched; clean worktree | DONE | `1e6769b` |
-| T01 | P1 | Runtime | Python 3.13 cannot validate the declared legacy runtime | Create an isolated Python 3.12 environment; install declared dependencies; execute the full runtime suite | Pending environment installation | IN_PROGRESS | n/a |
-| L01 | P0 | Return reconstruction | Rolling-origin predictions may be compounded incorrectly | Verify input origins and repair reconstruction with hand-calculated regressions | Pending supported runtime | TODO | n/a |
-| L02 | P0 | Trend residual reconstruction | Residual inverse may use the wrong baseline | Reconstruct using the same causal trend definition as target construction | Pending supported runtime | TODO | n/a |
-| L03 | P1 | Checkpoint policy | Early stopping does not request the best validation weights | Verify saved prediction behavior and restore the declared best checkpoint | Pending supported runtime | TODO | n/a |
+| T01 | P1 | Runtime | Python 3.13 cannot validate the declared legacy runtime | Isolated Python 3.12.16 + TensorFlow 2.18.1; pinned validated Windows dependencies | Baseline 72 tests; repaired legacy gate 90 tests; package compatibility passed | DONE | `910fad2` |
+| L01 | P0 | Return reconstruction | Rolling-origin predictions were compounded incorrectly | Use each observed origin close for its one-step inverse | Zero-return historical regression failed before and passed after; runtime compatibility passed | DONE | `3731812` |
+| L02 | P0 | Trend residual reconstruction | Historical and recursive inverses used prior close instead of the fitted trend | Share causal trend target definition; reconstruct from observed/generated history in the appropriate mode | Historical horizons 1/2, recursive inference and noise-free simulated paths verified | DONE | `3731812`, `f6ccfd1`, `7b1a908` |
+| L03 | P1 | Checkpoint policy | Saved weights were the final epoch rather than the best validation epoch | Restore best weights on training end, then save | Real Keras save/reload checks failed before and passed after, with and without patience exhaustion | DONE | `805e49e`, `fe7cfff` |
 | M01 | P1 | Market protocol | No identified market snapshot or frozen experiment specification | Record source, adjustment policy, checksum, time partitions and research-only scope before scoring | Pending acquisition | TODO | n/a |
 | W01 | P1 | Walk-forward | The new runner only has a fixed holdout | Extend existing runner/fold utilities with isolated folds, matched targets and complete artifacts | Fold isolation, reload and aggregation checks required | TODO | n/a |
 | A01 | P2 | Feature ablation | Feature contribution has not been measured | Evaluate one predefined causal feature group against minimal return history on the same development protocol | Report all folds and negative results; protect final holdout | TODO | n/a |
@@ -30,6 +30,22 @@ commits must change one file each and preserve passing intermediate states.
 The scope is CPU research and short verification runs. No paid resources, live
 trading or deployment are authorized. Market snapshots downloaded today may
 contain retrospective vendor revisions; no point-in-time correctness is claimed.
+
+Legacy gate evidence: `log/validation_20261112/legacy_gate.txt` records **90
+passing tests**, with no exclusions, on Python 3.12.16 / TensorFlow 2.18.1 / Keras
+3.15.1. The device check reports CPU only. `constraints-win-py312.txt` records
+the validated 80-package version snapshot; an offline constrained-install dry
+run would make no changes. It is not a cross-platform/hash-locked environment.
+Warnings remain for a trusted local scaler fixture serialized by scikit-learn
+1.5.1 and loaded under 1.9.1, and upstream pandas/Keras deprecations. Compatibility
+smoke tests pass, but exact upstream result reproduction is not claimed.
+
+The frozen market protocol was committed as `b86dcf7` before acquisition or
+market scoring: two preselected assets, daily adjusted closes, deterministic
+Ridge, matched targets, a predefined absolute-return feature group, chronological
+development folds and a final holdout beginning 2023. It explicitly documents
+survivor selection and retrospective data limitations. No result-based protocol
+changes or automatic trading/model promotion are permitted in this experiment.
 
 ## Starting state and provenance
 
