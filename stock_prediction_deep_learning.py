@@ -38,6 +38,7 @@ from quant_forecast_lab.evaluation import evaluate_price_forecast
 from quant_forecast_lab.experiment import runtime_metadata, sha256_file
 from quant_forecast_lab.reconstruction import causal_trend, rolling_return_prices
 from quant_forecast_lab.reproducibility import set_global_seed
+from quant_forecast_lab.scalers import save_minmax_scaler
 from stock_prediction_class import StockPrediction
 from stock_prediction_lstm import LongShortTermMemory
 from stock_prediction_numpy import StockData
@@ -151,10 +152,12 @@ def train_LSTM_network(
     scaler_path = os.path.join(stock.get_project_folder(), 'min_max_scaler.pkl')
     with open(scaler_path, 'wb') as scaler_file:
         pickle.dump(data.get_min_max(), scaler_file)
+    save_minmax_scaler(data.get_min_max(), os.path.join(stock.get_project_folder(), 'min_max_scaler.json'))
     if use_deltas or use_trend_residual:
         input_scaler_path = os.path.join(stock.get_project_folder(), 'input_scaler.pkl')
         with open(input_scaler_path, 'wb') as scaler_file:
             pickle.dump(data.get_input_scaler(), scaler_file)
+        save_minmax_scaler(data.get_input_scaler(), os.path.join(stock.get_project_folder(), 'input_scaler.json'))
     return_anchor_mean = None
     if model_version == 'v9':
         training_close = pd.to_numeric(training_data['Close'], errors='coerce').dropna()
@@ -184,6 +187,8 @@ def train_LSTM_network(
         'test_observations': int(len(test_data)),
         'market_data_file': 'market_data.csv',
         'market_data_sha256': sha256_file(market_data_path),
+        'target_scaler_file': 'min_max_scaler.json',
+        'input_scaler_file': 'input_scaler.json' if use_deltas or use_trend_residual else None,
         'runtime': runtime_metadata(cwd=os.getcwd()),
     }
     if model_version == 'v9':
