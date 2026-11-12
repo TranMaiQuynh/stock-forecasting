@@ -270,10 +270,11 @@ python -m quant_forecast_lab.cli --help
 việc chạy bộ này. Bộ runtime local đã đạt; scaler JSON đã được đối chiếu với
 bản pickle trong đúng runtime gốc. Việc này chưa tái lập training của upstream.
 Workflow ở Git root kiểm tra phần offline trên Python 3.12; hosted GitHub Actions
-đã xác minh thành công cho commit main `1e6769b` tại
-[run 43061821900](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/43061821900).
-Nhánh phát triển hiện tại chưa có hosted run tương ứng; reference fixtures vẫn
-được cấp riêng thay vì đưa vào Git.
+đã đạt trên nhánh `fix/forecasting-validation`, commit `ddc26d0`, tại
+[run 43164635037](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/43164635037):
+lint/compile, test nhẹ và demo synthetic đều thành công trên Linux. Bộ TensorFlow
+đầy đủ được xác minh riêng trên Windows như trên; reference fixtures được cấp
+riêng thay vì đưa vào Git.
 
 Phần kế thừa gồm kiến trúc LSTM, data/training scripts, evaluation utilities
 và các thí nghiệm lịch sử. Phần phát triển tại workspace này gồm sửa lỗi
