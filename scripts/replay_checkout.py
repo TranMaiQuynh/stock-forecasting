@@ -144,7 +144,7 @@ def main(argv=None):
         if not counts or re.search(r"\b\d+ skipped\b", result):
             raise RuntimeError("Expected a complete passing suite without skipped tests.")
         receipt["tests_passed"] = int(counts[-1])
-        stage(
+        smoke = stage(
             "smoke",
             [
                 str(python),
@@ -161,6 +161,41 @@ def main(argv=None):
                 "--max-analysis-lag",
                 "5",
             ],
+            cwd=checkout,
+        )
+        smoke_runs = re.findall(r"^Run: (.+)$", smoke, flags=re.MULTILINE)
+        if len(smoke_runs) != 1:
+            raise RuntimeError("Synthetic smoke did not report exactly one saved model run.")
+        model_run = Path(smoke_runs[0].strip()).resolve()
+        if not model_run.is_relative_to(checkout / "log"):
+            raise RuntimeError("Synthetic model run is outside the clean checkout log directory.")
+        stage(
+            "verify_model",
+            [str(python), "-m", "quant_forecast_lab.cli", "verify-run", "--run-dir", str(model_run)],
+            cwd=checkout,
+        )
+        predicted = stage(
+            "predict",
+            [
+                str(python),
+                "-m",
+                "quant_forecast_lab.cli",
+                "predict",
+                "--run-dir",
+                str(model_run),
+                "--csv",
+                str(model_run / "input_snapshot.csv"),
+                "--asset",
+                "CLEAN_REPLAY",
+            ],
+            cwd=checkout,
+        )
+        forecast = json.loads(predicted)
+        if forecast["actual"] is not None or forecast["target_timestamp"] is not None:
+            raise RuntimeError("Inference invented a future actual or session timestamp.")
+        stage(
+            "verify_forecast",
+            [str(python), "-m", "quant_forecast_lab.cli", "verify-run", "--run-dir", forecast["run_directory"]],
             cwd=checkout,
         )
         status = stage("git_status", ["git", "status", "--porcelain"], cwd=checkout)
