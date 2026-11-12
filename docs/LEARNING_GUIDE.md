@@ -163,6 +163,41 @@ Không suy rộng thành “mọi feature biến động đều vô ích” hay 
 
 ![Kết quả development và final holdout](../benchmarks/results/2026-11-12-reference-ridge.png)
 
+## 8. Từ thí nghiệm đến sử dụng artifact
+
+Lệnh `verify-run` kiểm tra trạng thái completed, danh sách file và checksum.
+Lệnh `predict` dùng model đã lưu để đọc CSV mới rồi dự báo một quan sát kế tiếp.
+Đây là **inference**, khác training: chương trình không học lại mean/scale,
+hệ số hoặc chọn hyperparameter từ CSV mới. Test chặn cả truy cập mạng và các
+hàm fit để phát hiện nếu quy tắc này bị vi phạm.
+
+CSV phải cùng asset và cùng định nghĩa giá/tần suất với training. Origin cuối
+không được sớm hơn validation cutoff: cấu hình được chọn bằng validation, nên
+chưa thể tồn tại hợp lệ trước khi các nhãn validation cần thiết đã được quan sát.
+Output phân biệt nguồn training của model với CSV do người dùng cung cấp;
+không tự chứng nhận CSV mới là dữ liệu thị trường hay đã đúng point-in-time.
+
+Kết quả có dự báo model, baseline và `model_status=research_candidate_not_promoted`.
+Actual và ngày target tương lai để null. Có được một con số dự báo không phải
+bằng chứng model tốt; kết quả benchmark âm ở mục 7 vẫn giữ nguyên.
+
+Với LSTM reference, scaler cũ từng được lưu bằng pickle của scikit-learn 1.5.1.
+Đã xuất tham số số học sang JSON trong đúng môi trường đó, đối chiếu phép biến
+đổi và dự báo reference dưới runtime 1.9.1, giữ nguyên weights/file gốc. Đây là
+chuyển đổi biểu diễn đã kiểm chứng, không phải refit scaler hay nâng chất lượng
+model. Công cụ chỉ dùng pickle local đã tin cậy; xem
+[hướng dẫn chính thức về persistence](https://scikit-learn.org/stable/model_persistence.html).
+
+Tái lập sạch kiểm tra thêm một điều khác với test trong workspace: code được
+clone từ commit, dependency cài vào môi trường riêng, reference được cấp đúng
+hash và package phải import từ clone. Một source file chưa commit hoặc package
+ngoài workspace vì thế không thể vô tình che lấp phần còn thiếu. Thư mục tạm
+riêng và log từng stage giúp truy nguyên lỗi môi trường.
+
+Lệnh PowerShell đầy đủ nằm trong [README](../README.md), các công cụ tương ứng:
+[provision_reference.py](../scripts/provision_reference.py) và
+[replay_checkout.py](../scripts/replay_checkout.py).
+
 ## Bài tập của người học
 
 Tính `r1, r2, r3, r4` cho chuỗi ở mục 1; viết input/target của
@@ -173,7 +208,7 @@ Ba câu hỏi kiểm tra hiểu biết:
 
 1. Vì sao được dùng giá phiên trước trong final holdout làm input, nhưng không
    được dùng kết quả toàn holdout để chọn feature?
-2. Vì sao 109 test đạt chưa chứng minh model có lợi thế dự báo trên thị trường?
+2. Vì sao toàn bộ test đạt chưa chứng minh model có lợi thế dự báo trên thị trường?
 3. Vì sao tăng từ L lên 2L feature cần đánh giá riêng, ngay cả khi ACF có spike?
 
 Đáp án đạt yêu cầu khi phân biệt được thời điểm có thông tin, phạm vi test kỹ
