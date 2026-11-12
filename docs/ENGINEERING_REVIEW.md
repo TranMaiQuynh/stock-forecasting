@@ -19,10 +19,10 @@ and offline use rather than retuning from the observed final holdout.
 
 | Task ID | Priority | Component | Issue | Action / acceptance criteria | Verification | Status | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| R02 | P1 | Clean replay | Full runtime depends on local ignored reference artifacts | Provision exact checksum-verified fixtures into an isolated source export and independent environment; run the complete suite and offline smoke | Pending provisioned replay | TODO | n/a |
-| R03 | P1 | Legacy scaler | Pickled 1.5.1 scaler is loaded under 1.9.1 | Export numerical scaler state under the original version; verify transforms and model-output parity; prefer validated JSON without changing legacy weights | Baseline and original-version environment preparation | IN_PROGRESS | n/a |
+| R02 | P1 | Clean replay | Full runtime depends on local ignored reference artifacts | Provision exact checksum-verified fixtures into a clean local clone and independent environment; run the complete suite and offline smoke | 128 tests, dependency/lint/import checks and synthetic smoke passed in isolated checkout; source stayed clean | VERIFIED | `26f01f1`, `235c404`; replay driver pending commit |
+| R03 | P1 | Legacy scaler | Pickled 1.5.1 scaler was loaded under 1.9.1 | Export numerical scaler state under the original version; prefer validated JSON; save JSON in new training runs | 13 serializer tests; 20 runtime tests; original-version probes match at 1e-12, 3-step/12-column reference forecast max difference 0 | DONE | `58301eb`, `f99bb28`, `ab57ef2` |
 | R04 | P2 | Offline consumer | Saved numerical model has a Python interface but no complete batch prediction command | Add CSV-to-next-observation prediction using the existing artifact contract, baseline comparison and tracked outputs; reject incompatible/corrupt inputs | Offline integration, input/alignment and failure-state checks required | TODO | n/a |
-| R05 | P1 | Delivery checks | Hosted CI for this unpublished branch and clean replay are unverified | Validate locally from exported committed source; inspect available remote CI evidence; report any publication/access dependency accurately | Pending delivery verification | TODO | n/a |
+| R05 | P1 | Delivery checks | Hosted CI for this unpublished branch and clean replay are unverified | Validate locally from committed source; inspect available remote CI evidence; report publication/access dependencies accurately | Main commit 1e6769b has a verified successful hosted run; current branch has not been published | IN_PROGRESS | n/a |
 
 Completion scope is an auditable offline research/batch project. Production
 serving and a new market hypothesis remain separate roadmap decisions; no
