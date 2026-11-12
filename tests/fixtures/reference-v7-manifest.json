@@ -1,0 +1,30 @@
+{
+  "fixture_id": "upstream_reference_v7_ftse",
+  "license": "Apache-2.0; see LICENSE and CITATION.cff",
+  "note": "Local fixture identity, not a claim of upstream training-result reproduction; binaries are provisioned separately.",
+  "original_pickle_sha256": {
+    "input_scaler.pkl": "be52e88ffce8bd42803159772e276122d58a3a3c4b31469ede2e7a1af8d7a7b4",
+    "min_max_scaler.pkl": "6eec587cee4f2879aa085e60601b21e7b9fff07e44cd89d41656fbf22b4322ea"
+  },
+  "required_files_sha256": {
+    "input_scaler.json": "8ae0c83a37ea562ca0be972a78623d8659c8d336ae671083c7c541c96c0bc7bf",
+    "min_max_scaler.json": "8e29f93af03f2bf15342655cfbc6cbfef44785c2111c526c1e7071d571edffef",
+    "model_config.json": "745d06c512b89c8723cb2ef66579ab38b4e576109db2a489e7d6841904dfbb30",
+    "model_direction.keras": "f9abcf47d9d0641ce3b1d1d4241285d7472dda79ef4cf6c576a94364f561a2b1",
+    "model_magnitude.keras": "604ffb6069e4e5ffc70a1df4abe72365e1ee67ab7ee72ab5b825f665ca7d730d"
+  },
+  "scaler_migration": {
+    "absolute_tolerance": 1e-10,
+    "forecast_steps": 3,
+    "max_absolute_difference": 0.0,
+    "model_weights": "unchanged",
+    "numeric_columns": 12,
+    "numerical_json_runtime_sklearn": "1.9.1",
+    "original_files_unchanged": 14,
+    "original_sklearn": "1.5.1",
+    "scaler_probe_absolute_tolerance": 1e-12
+  },
+  "schema_version": 1,
+  "upstream": "Jordi Corbilla / Quant Forecast Lab",
+  "upstream_commit": null
+}
