@@ -26,3 +26,13 @@ def test_runs_are_unique_and_completed_manifest_hashes_closed_log(tmp_path):
         assert manifest["status"] == "completed"
         assert manifest["artifact_sha256"]["run.log"] == sha256_file(run / "run.log")
     assert paths[0] != paths[1]
+
+
+def test_parent_hashes_child_manifest_but_not_its_own_manifest(tmp_path):
+    with tracked_run(tmp_path, "parent", {}) as (parent, _):
+        with tracked_run(parent / "folds", "child", {}) as (child, _):
+            write_json(child / "metrics.json", {"rmse": 0.1})
+    manifest = json.loads((parent / "manifest.json").read_text())
+    child_path = (child / "manifest.json").relative_to(parent).as_posix()
+    assert manifest["artifact_sha256"][child_path] == sha256_file(child / "manifest.json")
+    assert "manifest.json" not in manifest["artifact_sha256"]
