@@ -47,9 +47,15 @@ StockForecasting/               # Git root: chạy lệnh tại đây
 
 Runtime đầy đủ của upstream yêu cầu Python 3.11 hoặc 3.12 và
 TensorFlow 2.18.1. Đã tạo môi trường riêng `.venv/runtime312` và xác minh
-Python 3.12.16 / TensorFlow 2.18.1 trên CPU: **109 tests đạt**, gồm runtime tests.
+Python 3.12.16 / TensorFlow 2.18.1 trên CPU: **142 tests đạt từ clone sạch**,
+gồm runtime tests và kiểm tra inference offline.
 V1/v6/v9 cũng đã chạy một bước tối ưu hóa thật và kiểm tra lưu/nạp artifact;
 đây chưa phải huấn luyện hay tái lập benchmark thị trường của LSTM upstream.
+
+Tái lập độc lập dùng fixture được kiểm tra checksum và môi trường riêng.
+Scaler reference đã chuyển
+sang JSON từ đúng scikit-learn 1.5.1; dự báo đối chiếu 3 bước/12 cột số có sai
+khác lớn nhất bằng 0 dưới runtime 1.9.1, giữ nguyên toàn bộ file reference gốc.
 
 Trong workspace hiện tại, chạy từ Git root:
 
@@ -191,6 +197,66 @@ Dữ liệu tổng hợp dùng kiểm tra kỹ thuật; kết quả thị trư�
 Thí nghiệm mới chưa chứng minh lợi thế trên final holdout hoặc khả năng sinh lợi.
 Runner chưa có calibrated uncertainty, trading execution hoặc deployment.
 
+## Dùng model đã lưu với CSV mới
+
+`predict` là tác vụ offline: kiểm tra run nguồn, đọc CSV và dự báo một quan sát
+kế tiếp, không fit lại scaler/model. CSV giữ hợp đồng `Date,Close` với ít nhất
+60 quan sát; còn phải đủ lookback của model. `--asset` phải khớp model và thời
+điểm cuối CSV không được sớm hơn thời điểm chọn cấu hình bằng validation.
+Người cung cấp CSV phải giữ cùng định nghĩa giá và tần suất với training.
+
+Ví dụ đầy đủ bằng dữ liệu tổng hợp, chạy từ Git root trên PowerShell:
+
+~~~powershell
+$forecastPython = ".\.venv\runtime312\Scripts\python.exe"
+$experimentOutput = & $forecastPython -m quant_forecast_lab.cli experiment --synthetic --asset DEMO --lookbacks 1 --ridge-alphas 1 --max-analysis-lag 5
+$modelRun = ($experimentOutput | Select-Object -Last 1) -replace '^Run: ', ''
+& $forecastPython -m quant_forecast_lab.cli verify-run --run-dir $modelRun
+& $forecastPython -m quant_forecast_lab.cli predict --run-dir $modelRun --csv (Join-Path $modelRun 'input_snapshot.csv') --asset DEMO
+~~~
+
+Thay CSV bằng lịch sử mới của cùng asset để dùng artifact đã lưu. Với kết quả
+walk-forward, chọn child run cuối theo `final_child_run` trong `metrics.json`.
+Output có model prediction, baseline zero return và thư mục run mới ở
+`log/saved_ridge_forecast/`. `actual` và `target_timestamp` là `null`; chương trình
+không đoán ngày sàn hoặc điền actual tương lai. Model vẫn được gắn nhãn research
+candidate; xuất được forecast không có nghĩa vượt baseline hay được promote.
+
+Run mới giữ snapshot input, model JSON đã kiểm tra, nguồn model, forecast,
+summary, checksum và log lỗi. `verify-run` kiểm tra trạng thái hoàn tất, danh
+sách file và hash; nó không chứng minh nguồn đáng tin hay chất lượng model.
+
+## Tái lập từ checkout sạch
+
+`tests_runtime` cần đúng model reference, không có sẵn trong Git. Manifest tại
+[reference-v7-manifest.json](tests/fixtures/reference-v7-manifest.json) ghi hash
+của 2 model, config và 2 scaler JSON. Công cụ sau kiểm tra toàn bộ source trước
+khi cấp fixture; không ghi đè artifact khác nội dung:
+
+~~~powershell
+python scripts\provision_reference.py --source examples\runs\reference-v7-ftse --destination log\reference_copy
+~~~
+
+Chạy kiểm chứng đầy đủ, dùng uv và cache dependency đã có trong workspace:
+
+~~~powershell
+.\.venv\runtime312\Scripts\python.exe scripts\replay_checkout.py --reference-source examples\runs\reference-v7-ftse
+~~~
+
+Script clone commit hiện tại vào run mới trong `log/clean_replay/`, tạo môi
+trường độc lập, cài bằng constraints từ cache offline, cấp fixture, kiểm tra
+import/dependency/lint và chạy toàn bộ test. TMP/TEMP riêng giúp tránh phụ thuộc
+quyền thư mục tạm của phiên khác. Nó tiếp tục smoke train/verify/predict/verify
+và kiểm tra source vẫn sạch. Mỗi stage có log và `receipt.json`; lỗi được giữ
+và báo failed. Script không tải mạng; máy mới cần chuẩn bị uv/cache hoặc cài
+runtime bằng hướng dẫn phía trên trước.
+
+Với scaler pickle kế thừa, chỉ chuyển đổi artifact local đã tin cậy trong môi
+trường có đúng phiên bản tạo scaler, bằng
+`scripts/export_legacy_scalers.py --source <reference_run>`.
+Inference ưu tiên JSON hợp lệ và không fallback sang pickle nếu JSON hỏng.
+Các lần training mới lưu JSON cùng file legacy để giữ tương thích.
+
 ## Kiểm tra chất lượng và học tập
 
 ~~~powershell
@@ -201,10 +267,13 @@ python -m quant_forecast_lab.cli --help
 ~~~
 
 `tests_runtime` cần đầy đủ TensorFlow và fixture; test nhẹ không thay thế
-việc chạy bộ này. Bộ runtime local đã đạt, nhưng scaler reference có cảnh báo
-khác phiên bản scikit-learn; chưa tuyên bố tái lập chính xác kết quả upstream.
+việc chạy bộ này. Bộ runtime local đã đạt; scaler JSON đã được đối chiếu với
+bản pickle trong đúng runtime gốc. Việc này chưa tái lập training của upstream.
 Workflow ở Git root kiểm tra phần offline trên Python 3.12; hosted GitHub Actions
-vẫn chưa được xác minh trong phiên này và reference fixtures chưa nằm trong Git.
+đã xác minh thành công cho commit main `1e6769b` tại
+[run 43061821900](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/43061821900).
+Nhánh phát triển hiện tại chưa có hosted run tương ứng; reference fixtures vẫn
+được cấp riêng thay vì đưa vào Git.
 
 Phần kế thừa gồm kiến trúc LSTM, data/training scripts, evaluation utilities
 và các thí nghiệm lịch sử. Phần phát triển tại workspace này gồm sửa lỗi
