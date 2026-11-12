@@ -29,10 +29,13 @@ class ResearchConfig:
     max_analysis_lag: int = 20
     diagnostic_alpha: float = 0.05
     seed: int = 42
+    feature_group: str = "returns"
 
     def validate(self):
         if not self.asset.strip():
             raise ValueError("asset cannot be empty.")
+        if self.feature_group not in {"returns", "returns_abs"}:
+            raise ValueError("feature_group must be returns or returns_abs.")
         if not self.lookbacks or any(isinstance(n, bool) or not isinstance(n, int) or n < 1 for n in self.lookbacks):
             raise ValueError("lookbacks must be positive integers.")
         if not self.ridge_alphas or any(not np.isfinite(a) or a <= 0 for a in self.ridge_alphas):
@@ -101,6 +104,23 @@ def return_windows(close, target_indices, lookback):
     return x, returns[targets - 1]
 
 
+def _feature_order(lookback, group):
+    names = [f"return_lag_{lag}" for lag in range(1, lookback + 1)]
+    if group == "returns_abs":
+        names += [f"abs_return_lag_{lag}" for lag in range(1, lookback + 1)]
+    return names
+
+
+def feature_windows(close, target_indices, lookback, group="returns"):
+    """Build causal signed-return lags and an optional predefined magnitude group."""
+    if group not in {"returns", "returns_abs"}:
+        raise ValueError("Unsupported feature group.")
+    x, y = return_windows(close, target_indices, lookback)
+    if group == "returns_abs":
+        x = np.column_stack((x, np.abs(x)))
+    return x, y
+
+
 def predict_saved_model(model_path, close_history) -> float:
     """Predict the next log return from JSON numerical parameters, without pickle."""
     model = json.loads(Path(model_path).read_text(encoding="utf-8"))
@@ -109,14 +129,17 @@ def predict_saved_model(model_path, close_history) -> float:
     lookback = model["lookback"]
     if isinstance(lookback, bool) or not isinstance(lookback, int) or lookback < 1:
         raise ValueError("Invalid model lookback.")
-    if model.get("feature_order") != [f"return_lag_{lag}" for lag in range(1, lookback + 1)]:
+    group = model.get("feature_group", "returns")
+    if group not in {"returns", "returns_abs"} or model.get("feature_order") != _feature_order(lookback, group):
         raise ValueError("Incompatible feature order in model artifact.")
     history = np.asarray(close_history, dtype=float)
     if history.ndim != 1 or len(history) < lookback + 1 or not np.isfinite(history).all() or (history <= 0).any():
         raise ValueError("Inference needs finite positive closes with enough observed history.")
-    x = np.diff(np.log(history))[-lookback:][::-1]
+    # The placeholder target is never observed by the feature builder.
+    x, _ = feature_windows(np.append(history, history[-1]), [len(history)], lookback, group)
+    x = x[0]
     mean, scale, coef = (np.asarray(model[name], dtype=float) for name in ("mean", "scale", "coef"))
-    if any(v.shape != (lookback,) or not np.isfinite(v).all() for v in (mean, scale, coef)) or (scale <= 0).any():
+    if any(v.shape != x.shape or not np.isfinite(v).all() for v in (mean, scale, coef)) or (scale <= 0).any():
         raise ValueError("Invalid scaler/model parameter shapes or values.")
     prediction = float(((x - mean) / scale) @ coef + model["intercept"])
     if not np.isfinite(prediction):
@@ -166,7 +189,9 @@ def _figures(predictions, close, train_end, validation_end, directory, label):
         plt.close(fig)
 
 
-def run_offline_experiment(input_csv=None, *, output_root="log", config=None, data_kind="user_supplied") -> Path:
+def run_offline_experiment(
+    input_csv=None, *, output_root="log", config=None, data_kind="user_supplied", split_boundaries=None
+) -> Path:
     """Run a fixed chronological holdout with a bounded validation-only search.
 
     input_csv=None explicitly generates a labelled synthetic smoke experiment.
@@ -187,10 +212,23 @@ def run_offline_experiment(input_csv=None, *, output_root="log", config=None, da
         "data_kind": kind,
         "input_csv": str(input_csv) if input_csv else None,
         "protocol": "fixed chronological holdout; validation selects Ridge; no refit; no trading simulation",
+        "explicit_split_boundaries": split_boundaries,
     }
     with tracked_run(output_root, "ridge_log_return", settings) as (run, logger):
         raw = synthetic_close(config.seed) if input_csv is None else pd.read_csv(input_csv)
         close = validate_close_frame(raw)
+        if split_boundaries is None:
+            train_end = int(len(close) * config.train_fraction)
+            validation_end = train_end + int(len(close) * config.validation_fraction)
+        else:
+            if (
+                len(split_boundaries) != 3
+                or any(isinstance(n, bool) or not isinstance(n, int) for n in split_boundaries)
+                or not 0 < split_boundaries[0] < split_boundaries[1] < split_boundaries[2] <= len(close)
+            ):
+                raise ValueError("split_boundaries must be ordered integer train/validation/test stops.")
+            train_end, validation_end, test_end = split_boundaries
+            close = close.iloc[:test_end].copy()
         close.to_csv(run / "input_snapshot.csv")
         write_json(
             run / "data_manifest.json",
@@ -207,8 +245,6 @@ def run_offline_experiment(input_csv=None, *, output_root="log", config=None, da
                 "last": str(close.index[-1]),
             },
         )
-        train_end = int(len(close) * config.train_fraction)
-        validation_end = train_end + int(len(close) * config.validation_fraction)
         targets = np.arange(max(config.lookbacks) + 1, len(close))
         train = targets < train_end
         validation = (targets >= train_end) & (targets < validation_end)
@@ -242,7 +278,7 @@ def run_offline_experiment(input_csv=None, *, output_root="log", config=None, da
         logger.info("Training-only stationarity and correlation diagnostics saved")
         trials, best = [], None
         for lookback in config.lookbacks:
-            x, y = return_windows(close.Close, targets, lookback)
+            x, y = feature_windows(close.Close, targets, lookback, config.feature_group)
             for ridge_alpha in config.ridge_alphas:
                 model = make_pipeline(StandardScaler(), Ridge(alpha=ridge_alpha, solver="svd"))
                 try:
@@ -276,14 +312,15 @@ def run_offline_experiment(input_csv=None, *, output_root="log", config=None, da
                 if best is None or score < best[0]:
                     best = score, lookback, ridge_alpha, model
         _, lookback, ridge_alpha, model = best
-        x, y = return_windows(close.Close, targets, lookback)
+        x, y = feature_windows(close.Close, targets, lookback, config.feature_group)
         scaler, estimator = model.steps[0][1], model.steps[1][1]
-        feature_order = [f"return_lag_{lag}" for lag in range(1, lookback + 1)]
+        feature_order = _feature_order(lookback, config.feature_group)
         model_record = {
             "schema_version": 1,
             "target": "next_observation_log_return",
             "lookback": lookback,
             "ridge_alpha": ridge_alpha,
+            "feature_group": config.feature_group,
             "feature_order": feature_order,
             "mean": scaler.mean_.tolist(),
             "scale": scaler.scale_.tolist(),
@@ -306,18 +343,19 @@ def run_offline_experiment(input_csv=None, *, output_root="log", config=None, da
             {
                 "base_series": 1,
                 "selected_lookback": lookback,
-                "scalar_features": lookback,
+                "scalar_features": x.shape[1],
                 "training_shape": list(x[train].shape),
-                "fitted_coefficients": lookback + 1,
+                "fitted_coefficients": x.shape[1] + 1,
                 "selection": "validation RMSE; no ACF significance filter",
                 "independent_samples": False,
-                "feature_groups": "return history only; indicator ablation deferred",
+                "feature_group": config.feature_group,
+                "definitions": "signed return lags; optional absolute values of the identical observed lags",
             },
         )
         (run / "model_summary.txt").write_text(
             "StandardScaler -> Ridge(solver=svd)\nTarget: one-step log return\n"
             f"Input shape: {x[train].shape}\nLookback: {lookback}\nRidge alpha: {ridge_alpha}\n"
-            f"Coefficients including intercept: {lookback + 1}\nFeature order: {feature_order}\n"
+            f"Coefficients including intercept: {x.shape[1] + 1}\nFeature order: {feature_order}\n"
             "Fit scope: training only. Validation selects configuration. No refit. No epochs.\n",
             encoding="utf-8",
         )
@@ -414,12 +452,13 @@ def run_offline_experiment(input_csv=None, *, output_root="log", config=None, da
                 "walk_forward_training": "not_implemented_in_this_runner",
                 "backtest": "withheld_no_execution_contract",
                 "learning_curve": "not_applicable_closed_form_ridge",
-                "feature_group_ablation": "deferred",
+                "feature_group_ablation": "single group only; compare groups with the walk-forward orchestrator",
             },
         )
         (run / "summary.md").write_text(
             f"# Offline research run\n\nData kind: **{kind}**; asset: {config.asset}.\n\n"
             f"Selected lookback: {lookback}; Ridge alpha: {ridge_alpha}. No refit.\n\n"
+            f"Feature group: {config.feature_group}.\n\n"
             f"Test log-return RMSE: {metrics['test']['ridge_log_return']['rmse']:.8f}.\n"
             f"Zero-return RMSE: {metrics['test']['zero_log_return']['rmse']:.8f}.\n\n"
             "Training-only diagnostics are exploratory. Validation chose the Ridge configuration; "
