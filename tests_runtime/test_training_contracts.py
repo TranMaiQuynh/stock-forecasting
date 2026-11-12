@@ -14,6 +14,7 @@ from sklearn.preprocessing import MinMaxScaler
 import stock_prediction_deep_learning as training
 import stock_prediction_deep_learning_inference as inference
 import stock_prediction_forecasting as forecasting
+from quant_forecast_lab.scalers import load_minmax_scaler
 from stock_prediction_class import StockPrediction
 from stock_prediction_lstm import LongShortTermMemory
 from stock_prediction_numpy import StockData
@@ -74,6 +75,11 @@ def test_historical_predictions_invert_the_actual_target_definition(tmp_path, mo
     monkeypatch.setattr(training, "LongShortTermMemory", lambda *args: helper)
     stock = StockPrediction("TEST", dates[0], dates[35], str(tmp_path), "", 1, 3, "", 4)
     training.train_LSTM_network(stock, use_returns=use_returns, model_version=version, forecast_horizon=horizon, trend_window=4)
+    persisted = load_minmax_scaler(tmp_path / "min_max_scaler.json")
+    np.testing.assert_array_equal(persisted.scale_, captured["data"].get_min_max().scale_)
+    if version == "v6":
+        inputs = load_minmax_scaler(tmp_path / "input_scaler.json")
+        np.testing.assert_array_equal(inputs.scale_, captured["data"].get_input_scaler().scale_)
     predictions = pd.read_csv(tmp_path / "predictions.csv", index_col=0)
     count = 10 - horizon + 1
     assert len(predictions) == count
