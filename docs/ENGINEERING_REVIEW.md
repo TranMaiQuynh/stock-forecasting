@@ -14,20 +14,58 @@ Review date: 2026-11-11. Scope: imported Quant Forecast Lab source inside
 
 The owner requested continuation from the remaining roadmap. The starting tree
 is clean on `fix/forecasting-validation` at `d0284ed`. The completed market
-protocol/results above remain frozen; this continuation improves reproducibility
+protocol/results below remain frozen; this continuation improves reproducibility
 and offline use rather than retuning from the observed final holdout.
 
 | Task ID | Priority | Component | Issue | Action / acceptance criteria | Verification | Status | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| R02 | P1 | Clean replay | Full runtime depends on local ignored reference artifacts | Provision exact checksum-verified fixtures into a clean local clone and independent environment; run the complete suite and offline smoke | 128 tests, dependency/lint/import checks and synthetic smoke passed in isolated checkout; source stayed clean | VERIFIED | `26f01f1`, `235c404`; replay driver pending commit |
+| R02 | P1 | Clean replay | Full runtime depends on local ignored reference artifacts | Provision exact checksum-verified fixtures into a clean local clone and independent environment; run the complete suite and offline smoke | Final replay: 142 tests, all 14 stages, end-to-end offline prediction and clean source status | DONE | `26f01f1`, `235c404`, `f89ea08` |
 | R03 | P1 | Legacy scaler | Pickled 1.5.1 scaler was loaded under 1.9.1 | Export numerical scaler state under the original version; prefer validated JSON; save JSON in new training runs | 13 serializer tests; 20 runtime tests; original-version probes match at 1e-12, 3-step/12-column reference forecast max difference 0 | DONE | `58301eb`, `f99bb28`, `ab57ef2` |
-| R04 | P2 | Offline consumer | Saved numerical model has a Python interface but no complete batch prediction command | Add CSV-to-next-observation prediction using the existing artifact contract, baseline comparison and tracked outputs; reject incompatible/corrupt inputs | Offline integration, input/alignment and failure-state checks required | TODO | n/a |
+| R04 | P2 | Offline consumer | Saved numerical model had no complete batch prediction command | Add verified CSV-to-next-observation prediction without fitting; enforce asset, selection cutoff and immutable source | Artifact integrity/failure tests and 7 consumer/CLI tests pass; clean-checkout prediction and verification completed | DONE | `bca5f48`, `a087dd7`, `4b300d6`, `0724efc` |
 | R05 | P1 | Delivery checks | Hosted CI for this unpublished branch and clean replay are unverified | Validate locally from committed source; inspect available remote CI evidence; report publication/access dependencies accurately | Main commit 1e6769b has a verified successful hosted run; current branch has not been published | IN_PROGRESS | n/a |
 
 Completion scope is an auditable offline research/batch project. Production
 serving and a new market hypothesis remain separate roadmap decisions; no
 positive forecasting claim or reuse of the old final holdout is authorized by
 successful engineering validation.
+
+Continuation evidence:
+
+- `log/completion_20261112/scaler_parity.json`: numerical probes match sklearn
+  1.5.1 at absolute tolerance 1e-12; reference three-step inference under 1.9.1
+  with JSON has maximum absolute difference 0 over 12 numeric output columns.
+  All 14 original reference files retain their hashes. Two JSON sidecars were
+  added; original weights and pickle files were not rewritten.
+- The first clean replay retained 45 pytest temporary-directory setup errors
+  caused by access to the shared Windows temp root; it was not reported as a
+  passing run. The driver now assigns per-run TMP/TEMP directories. Replay
+  `log/clean_replay/20261112T050859Z_d6dc59c6/` passed all 128 then-current tests.
+- Final replay `log/clean_replay/20261112T054059Z_583329fc/` checks committed
+  source `0724efc24a3b3eb5355417814c897e0be241f406` in a separate clone/venv,
+  with Python 3.12.16 and the constrained dependency stack: **142 passed, 24
+  warnings**, no excluded/skipped tests. All 14 stages passed, including
+  train/verify/predict/verify and a clean source status. Current warnings concern
+  pandas/Keras deprecations and timezone plotting, not scaler version mismatch.
+- The local AAPL saved-model demo is recorded in
+  `log/completion_20261112/saved_forecast_demo.json`. Its origin is 2025-12-31,
+  not the current market date; target timestamp/actual remain null. No model was
+  refit or promoted, and the market benchmark results were not retuned.
+- The old complete market run still passes strict inventory/checksum
+  verification for all 955 recorded artifacts. Prior results remain descriptive
+  evidence at their original code commit, rather than claims about this new
+  consumer's predictive improvement.
+- Hosted offline CI for main commit `1e6769b` was verified from GitHub's API:
+  [run 43061821900](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/43061821900).
+  The owner previously authorized pushing this repository; the continuation
+  branch will be published normally after final local checks and its hosted
+  result recorded separately. No force push or history rewrite is permitted.
+
+Final target-scope assessment: the offline research/batch workflow is usable
+with the stated runtime and checksum-verified artifacts. Production readiness
+remains **not ready**: there is no live execution, service SLO or calibrated
+uncertainty claim. New neural market experiments and any new hypothesis remain
+separate research tasks, with new evaluation decisions made outside the already
+inspected final holdout.
 
 Bootstrap publication is complete at `1e6769bda83291010567d25932b0b157f98a1d29`;
 the remote `main` SHA was independently checked after the push. Earlier index
@@ -56,9 +94,10 @@ passing tests**, with no exclusions, on Python 3.12.16 / TensorFlow 2.18.1 / Ker
 3.15.1. The device check reports CPU only. `constraints-win-py312.txt` records
 the validated 80-package version snapshot; an offline constrained-install dry
 run would make no changes. It is not a cross-platform/hash-locked environment.
-Warnings remain for a trusted local scaler fixture serialized by scikit-learn
+At that historical gate, warnings remained for a trusted local scaler fixture serialized by scikit-learn
 1.5.1 and loaded under 1.9.1, and upstream pandas/Keras deprecations. Compatibility
-smoke tests pass, but exact upstream result reproduction is not claimed.
+smoke tests passed, but exact upstream result reproduction was not claimed.
+R03 above subsequently resolved the scaler warning with measured parity.
 
 The frozen market protocol was committed as `b86dcf7` before acquisition or
 market scoring: two preselected assets, daily adjusted closes, deterministic
@@ -111,7 +150,7 @@ snapshots, reference models and complete run logs remain local/ignored. Exact
 snapshot replay is available locally; a fresh clone needs those snapshots or
 new downloads, which may contain vendor revisions. Neural market benchmarking,
 calibrated uncertainty, execution simulation and deployment remain unimplemented
-or unverified in this new runner. No hosted CI success is claimed.
+or unverified in this new runner. Hosted CI evidence is recorded in R05 above.
 
 ### Independent reassessment after this execution
 
@@ -125,11 +164,11 @@ historical 2026-11-11 review and must not override this current evidence.
 | Code quality | 3 | Small verified fixes, shared causal inverse, strict schema/feature-order contracts | Partial typing coverage; no repository-wide static type gate |
 | Functional correctness | 3 | Runtime suite, adversarial transforms, real saved models and reload checks pass | Full upstream training/inference matrix and external competition workflows not replayed |
 | ML correctness | 3 | Train-only scaling/diagnostics, nested selection, matched origins, untouched final selection tests | Retrospective data, two surviving assets, no significance/robustness inference |
-| Reproducibility | 3 | Frozen protocol, pinned tested Windows versions, clean code hash, immutable snapshots and child hashes | No hash-locked cross-platform environment; raw datasets remain local; vendor revisions possible |
-| Testing/reliability | 3 | 109 tests on supported Python/TensorFlow; failures retained; actual optimizer/reload smoke | Hosted CI, full Linux neural runtime and GPU behavior unverified; third-party warnings remain |
-| E2E pipeline | 3 | Acquisition to walk-forward/ablation, final scoring, artifact reload and report executed | Neural training not integrated into this experiment lifecycle; only close-derived features |
-| Deployment | 1 | Reusable numerical inference artifacts and explicit error contracts | No service SLO, deployment, operational monitoring, rollback or live execution |
-| Documentation/DX | 3 | Current quickstart, learner guide, protocol, measured results and audit | New clone needs local reference fixtures/snapshots for exact replay |
+| Reproducibility | 3 | Frozen protocol, pinned Windows versions, clean-clone replay, isolated environment and checksum-provisioned fixtures | No hash-locked cross-platform environment; raw datasets remain local; vendor revisions possible |
+| Testing/reliability | 3 | 142 tests from a clean checkout; failures retained; actual optimizer/reload smoke; legacy scaler numerical parity | Full Linux neural runtime and GPU behavior unverified; third-party warnings remain; current branch CI tracked in R05 |
+| E2E pipeline | 3 | Acquisition to walk-forward/ablation, final scoring/report and verified saved-model CSV prediction executed | Neural training not integrated into this experiment lifecycle; only close-derived features |
+| Deployment | 1 | Usable offline batch CLI with verified model lineage and explicit failure contracts | No service SLO, deployment, operational monitoring, rollback or live execution |
+| Documentation/DX | 3 | Quickstart, learner guide, measured results, fixture provisioning and clean-replay command | New machine still needs authorized reference fixtures/snapshots and prepared dependency cache for exact offline replay |
 | Practical/portfolio value | 2 | Defensible methodology, falsifiable contribution and honest negative results | No demonstrated final forecasting advantage, trading utility or user validation |
 
 Technical verdict: a validated small research prototype with meaningful runtime,
@@ -141,21 +180,24 @@ Recommendation: **continue with narrow scope**, keeping the zero-return baseline
 
 Remaining prioritized roadmap:
 
-1. P1: clean-checkout replay with provisioned, checksum-verified reference
-   fixtures/snapshots. Gate: documented Windows reconstruction plus a successful
-   hosted offline CI run; do not upload vendor datasets without usage clearance.
-2. P1: resolve the legacy scaler version warning using a verified compatible
-   environment or regenerated artifacts, without silently ignoring it. Gate:
-   original/scoped reference prediction parity with explicit tolerances.
-3. P1: define one new hypothesis on development data only and register an
+1. P1: complete R05 publication and hosted offline CI verification on this
+   branch. Gate: exact remote SHA and successful hosted run recorded; no
+   reference binaries or vendor snapshots uploaded.
+2. P1, separate research scope: define one new hypothesis on development data
+   only and register an
    evaluation using an actually unused final period before viewing it. Gate:
    all predefined folds/assets and negative results reported; no reuse of this
    final holdout as untouched after result-driven changes.
-4. P2: if needed, integrate one existing neural model into the same lifecycle,
+3. P2, conditional: if needed, integrate one existing neural model into the same lifecycle,
    with bounded CPU training and fair trial budgets. Gate: full training/selection
    and reload tests, comparable origins, complete real-run evidence.
-5. P2: choose a concrete batch consumer before adding serving/monitoring. Gate:
-   measurable input contract, latency/resource budget and failure handling.
+4. P2, conditional on an actual operating requirement: measure a representative
+   batch consumer's latency/resource budget before adding serving/monitoring.
+   Gate: stated workload, measured resource use and operational failure policy.
+
+R02-R04 complete the previously pending clean replay, scaler compatibility and
+offline consumer gates. Later research/serving proposals are not implemented
+capabilities or prerequisites for the agreed offline research/batch handoff.
 
 ## Starting state and provenance
 
