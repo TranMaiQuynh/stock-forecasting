@@ -1,0 +1,257 @@
+{
+  "actual_ridge_trials": 204,
+  "aggregate_results": [
+    {
+      "asset": "AAPL",
+      "development_folds": 8,
+      "development_returns_abs_rmse": 0.02149484875353951,
+      "development_returns_rmse": 0.021349731385400812,
+      "final_lookback": 5,
+      "final_observations": 752,
+      "final_return_rmse": 0.016258352373543186,
+      "final_ridge_alpha": 1.0,
+      "final_rmse_skill_vs_zero": -0.009694200452407209,
+      "final_zero_return_rmse": 0.016102253896534625,
+      "ridge_trials": 102,
+      "selected_feature_group": "returns"
+    },
+    {
+      "asset": "MSFT",
+      "development_folds": 8,
+      "development_returns_abs_rmse": 0.019246010866515485,
+      "development_returns_rmse": 0.019175287897209414,
+      "final_lookback": 1,
+      "final_observations": 752,
+      "final_return_rmse": 0.014759663621257246,
+      "final_ridge_alpha": 10.0,
+      "final_rmse_skill_vs_zero": -0.012724441494579741,
+      "final_zero_return_rmse": 0.014574214876728876,
+      "ridge_trials": 102,
+      "selected_feature_group": "returns"
+    }
+  ],
+  "checks": {
+    "neural_optimizer_and_reload_smoke": [
+      "v1",
+      "v6",
+      "v9"
+    ],
+    "runtime_tests_included": true,
+    "tests_passed": 109
+  },
+  "code_commit": "3d40d9108437f42b9115014535e89cfaf543e44d",
+  "data_kind": "market",
+  "decision": "Do not retain the absolute-return group; both selected Ridge models have higher final RMSE than zero return. No model promotion.",
+  "environment": {
+    "matplotlib_version": "3.11.2",
+    "numpy_version": "2.0.2",
+    "pandas_version": "3.1.1",
+    "python_version": "3.12.16",
+    "scipy_version": "1.18.1",
+    "sklearn_version": "1.9.1",
+    "statsmodels_version": "0.15.0",
+    "tensorflow_version": "2.18.1"
+  },
+  "experiment_date": "2026-11-12",
+  "git_dirty_at_execution": false,
+  "limitations": [
+    "Two preselected surviving US technology companies; no universe-wide inference.",
+    "Retrospectively adjusted vendor data; point-in-time correctness and exchange calendar completeness unverified.",
+    "Final model frozen across the holdout; observations of prior sessions update inputs, not parameters.",
+    "No significance test, calibrated uncertainty, execution backtest, profitability or production-readiness claim.",
+    "Raw snapshots and full logs remain local/ignored; fresh vendor downloads may have revised prices.",
+    "Market benchmark uses Ridge only. Neural architectures had short compatibility/optimizer checks, not market training."
+  ],
+  "measurements": {
+    "AAPL": {
+      "actual_ridge_trials": 102,
+      "development": {
+        "returns": {
+          "observations": 1008,
+          "ridge_log_return": {
+            "directional_accuracy": 0.5386904761904762,
+            "mae": 0.01513622080761086,
+            "rmse": 0.021349731385400812,
+            "rmse_skill_vs_zero": 0.01125007077540352
+          },
+          "zero_log_return": {
+            "directional_accuracy": 0.001984126984126984,
+            "mae": 0.015192909369934157,
+            "rmse": 0.021592650228702246,
+            "rmse_skill_vs_zero": 0.0
+          }
+        },
+        "returns_abs": {
+          "observations": 1008,
+          "ridge_log_return": {
+            "directional_accuracy": 0.5238095238095238,
+            "mae": 0.015246788109621167,
+            "rmse": 0.02149484875353951,
+            "rmse_skill_vs_zero": 0.004529387274227803
+          },
+          "zero_log_return": {
+            "directional_accuracy": 0.001984126984126984,
+            "mae": 0.015192909369934157,
+            "rmse": 0.021592650228702246,
+            "rmse_skill_vs_zero": 0.0
+          }
+        }
+      },
+      "final": {
+        "observations": 752,
+        "ridge_log_return": {
+          "directional_accuracy": 0.4920212765957447,
+          "mae": 0.011120003871870458,
+          "rmse": 0.016258352373543186,
+          "rmse_skill_vs_zero": -0.009694200452407209
+        },
+        "ridge_price": {
+          "directional_accuracy": 0.4920212765957447,
+          "mae": 2.223261986398859,
+          "rmse": 3.266868975760878,
+          "rmse_skill_vs_naive": -0.011718904014786258
+        },
+        "zero_log_return": {
+          "directional_accuracy": 0.0026595744680851063,
+          "mae": 0.011011414336586865,
+          "rmse": 0.016102253896534625,
+          "rmse_skill_vs_zero": 0.0
+        }
+      },
+      "final_child_run": "final/ridge_log_return/20261112T033322_610863Z_0abc5ccf",
+      "folds": 8,
+      "interpretation": "Negative results retained. Final holdout is reporting only; no retuning or promotion.",
+      "selected_feature_group": "returns"
+    },
+    "MSFT": {
+      "actual_ridge_trials": 102,
+      "development": {
+        "returns": {
+          "observations": 1008,
+          "ridge_log_return": {
+            "directional_accuracy": 0.5436507936507936,
+            "mae": 0.013337204327137107,
+            "rmse": 0.019175287897209414,
+            "rmse_skill_vs_zero": 0.01908038376233434
+          },
+          "zero_log_return": {
+            "directional_accuracy": 0.003968253968253968,
+            "mae": 0.013518960574824199,
+            "rmse": 0.019548276515007994,
+            "rmse_skill_vs_zero": 0.0
+          }
+        },
+        "returns_abs": {
+          "observations": 1008,
+          "ridge_log_return": {
+            "directional_accuracy": 0.5505952380952381,
+            "mae": 0.013396362812801783,
+            "rmse": 0.019246010866515485,
+            "rmse_skill_vs_zero": 0.01546252163255657
+          },
+          "zero_log_return": {
+            "directional_accuracy": 0.003968253968253968,
+            "mae": 0.013518960574824199,
+            "rmse": 0.019548276515007994,
+            "rmse_skill_vs_zero": 0.0
+          }
+        }
+      },
+      "final": {
+        "observations": 752,
+        "ridge_log_return": {
+          "directional_accuracy": 0.5226063829787234,
+          "mae": 0.010656032355562457,
+          "rmse": 0.014759663621257246,
+          "rmse_skill_vs_zero": -0.012724441494579741
+        },
+        "ridge_price": {
+          "directional_accuracy": 0.5226063829787234,
+          "mae": 4.037790714743972,
+          "rmse": 5.5674675672079506,
+          "rmse_skill_vs_naive": -0.011776179791062491
+        },
+        "zero_log_return": {
+          "directional_accuracy": 0.0,
+          "mae": 0.010520539290576272,
+          "rmse": 0.014574214876728876,
+          "rmse_skill_vs_zero": 0.0
+        }
+      },
+      "final_child_run": "final/ridge_log_return/20261112T033429_115175Z_be200a9e",
+      "folds": 8,
+      "interpretation": "Negative results retained. Final holdout is reporting only; no retuning or promotion.",
+      "selected_feature_group": "returns"
+    }
+  },
+  "plot": {
+    "path": "benchmarks/results/2026-11-12-reference-ridge.png",
+    "sha256": "e224b16d56e216dae3967b2ef3163a7a9a50fc47c23da2718d76f364f27677ed"
+  },
+  "protocol_file": "benchmarks/protocols/return_history_ablation.json",
+  "protocol_sha256": "4f505b0fa3cab440f56f194618c292bb3ed1e7d75752490afac42dd807ca6a9f",
+  "run_directory": "log/market_protocol/20261112T033204_275096Z_904ed2d6",
+  "schema_version": 1,
+  "sources": {
+    "AAPL": {
+      "download_options": {
+        "actions": true,
+        "auto_adjust": true,
+        "back_adjust": false,
+        "end": "2026-01-01",
+        "ignore_tz": true,
+        "interval": "1d",
+        "keepna": true,
+        "multi_level_index": false,
+        "progress": false,
+        "repair": false,
+        "start": "2015-01-01",
+        "threads": false,
+        "tickers": "AAPL",
+        "timeout": 30
+      },
+      "observations": 2766,
+      "point_in_time_verified": false,
+      "provider": "Yahoo Finance via yfinance",
+      "provider_url": "https://finance.yahoo.com/quote/AAPL/history/",
+      "snapshot_directory": "log/market_snapshot/20261112T031740_328064Z_fcc19c0b",
+      "snapshot_sha256": "7313d3ef54aef185307313caa8351d6c8486f0924e4ee198748d4be293dc761d",
+      "yfinance_version": "1.0"
+    },
+    "MSFT": {
+      "download_options": {
+        "actions": true,
+        "auto_adjust": true,
+        "back_adjust": false,
+        "end": "2026-01-01",
+        "ignore_tz": true,
+        "interval": "1d",
+        "keepna": true,
+        "multi_level_index": false,
+        "progress": false,
+        "repair": false,
+        "start": "2015-01-01",
+        "threads": false,
+        "tickers": "MSFT",
+        "timeout": 30
+      },
+      "observations": 2766,
+      "point_in_time_verified": false,
+      "provider": "Yahoo Finance via yfinance",
+      "provider_url": "https://finance.yahoo.com/quote/MSFT/history/",
+      "snapshot_directory": "log/market_snapshot/20261112T031750_130333Z_f180c9ce",
+      "snapshot_sha256": "2249eef28a955abc6f2ebfc98dd5796052c985a4c4ba71133f169ff71e6084b6",
+      "yfinance_version": "1.0"
+    }
+  },
+  "verification": {
+    "checksum_comparisons": 2783,
+    "completed_manifests": 37,
+    "git_dirty_at_all_runs": false,
+    "independent_metric_recalculation": "verified",
+    "ridge_trials": 204,
+    "root": "log\\market_protocol\\20261112T033204_275096Z_904ed2d6",
+    "source_hashes": "verified",
+    "timestamp_and_target_isolation": "verified"
+  }
+}
