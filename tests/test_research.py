@@ -13,6 +13,7 @@ from quant_forecast_lab.cli import main
 from quant_forecast_lab.experiment import sha256_file
 from quant_forecast_lab.research import (
     ResearchConfig,
+    feature_windows,
     predict_saved_model,
     return_windows,
     run_offline_experiment,
@@ -26,6 +27,43 @@ def test_window_targets_and_origin_history_are_aligned():
     x, y = return_windows(close, [4, 5], 2)
     np.testing.assert_allclose(x, [[0.3, 0.2], [0.4, 0.3]])
     np.testing.assert_allclose(y, [0.4, 0.5])
+
+
+def test_absolute_return_features_keep_causal_order_and_target_alignment():
+    close = np.exp(np.cumsum([0.0, 0.1, -0.2, 0.3, -0.4, 0.5]))
+    x, y = feature_windows(close, [4, 5], 2, "returns_abs")
+    np.testing.assert_allclose(x, [[0.3, -0.2, 0.3, 0.2], [-0.4, 0.3, 0.4, 0.3]])
+    np.testing.assert_allclose(y, [-0.4, 0.5])
+    changed = close.copy()
+    changed[4:] *= 2
+    first, _ = feature_windows(changed, [4], 2, "returns_abs")
+    np.testing.assert_allclose(first, x[:1])
+
+
+def test_explicit_fold_boundaries_and_abs_artifact_reload(tmp_path):
+    frame = synthetic_close(42).iloc[:120].copy()
+    source = tmp_path / "input.csv"
+    frame.to_csv(source, index=False)
+    config = ResearchConfig(lookbacks=(1, 5), ridge_alphas=(1.0,), max_analysis_lag=5, feature_group="returns_abs")
+    run = run_offline_experiment(source, output_root=tmp_path / "a", config=config, split_boundaries=(60, 80, 100))
+    assert len(pd.read_csv(run / "input_snapshot.csv")) == 100
+    predicted = pd.read_csv(run / "predictions.csv")
+    assert len(predicted[predicted.split == "test"]) == 20
+    model = json.loads((run / "artifacts/model.json").read_text())
+    assert model["feature_group"] == "returns_abs"
+    targets = np.arange(6, 60)
+    features, _ = feature_windows(frame.Close, targets, model["lookback"], "returns_abs")
+    np.testing.assert_allclose(model["mean"], features.mean(axis=0))
+    first_test = predicted[predicted.split == "test"].iloc[0]
+    assert predict_saved_model(run / "artifacts/model.json", frame.Close.iloc[:80]) == pytest.approx(
+        first_test.predicted_log_return
+    )
+    # Observations beyond a fold stop cannot enter its diagnostics or model.
+    frame.loc[100:, "Close"] *= 10
+    frame.to_csv(source, index=False)
+    other = run_offline_experiment(source, output_root=tmp_path / "b", config=config, split_boundaries=(60, 80, 100))
+    for name in ("input_snapshot.csv", "artifacts/model.json", "trials.csv", "analysis/acf_pacf_values.csv"):
+        assert (run / name).read_bytes() == (other / name).read_bytes()
 
 
 def test_offline_run_artifacts_metrics_and_future_isolation(tmp_path, monkeypatch):
