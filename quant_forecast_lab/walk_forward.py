@@ -22,6 +22,7 @@ class WalkForwardConfig:
     final_holdout_start: str | None = None
     final_holdout_fraction: float = 0.2
     feature_groups: tuple[str, ...] = ("returns", "returns_abs")
+    development_only: bool = False
 
     def validate(self):
         for name in ("min_train_size", "validation_size", "test_size"):
@@ -31,7 +32,10 @@ class WalkForwardConfig:
         if not 0 < self.final_holdout_fraction < 1:
             raise ValueError("final_holdout_fraction must be between zero and one.")
         if self.final_holdout_start is not None:
-            pd.to_datetime(self.final_holdout_start, utc=True, errors="raise")
+            if pd.isna(pd.to_datetime(self.final_holdout_start, utc=True, errors="raise")):
+                raise ValueError("final_holdout_start must be a valid date.")
+        if not isinstance(self.development_only, bool) or (self.development_only and self.final_holdout_start is None):
+            raise ValueError("development_only requires a boolean flag and an explicit final_holdout_start cutoff.")
         if (
             not self.feature_groups
             or len(set(self.feature_groups)) != len(self.feature_groups)
@@ -53,6 +57,7 @@ def run_walk_forward_experiment(
     walk = walk_config or WalkForwardConfig()
     config.validate()
     walk.validate()
+    metric_name = "selected_log_return" if config.include_baselines else "ridge_log_return"
     if data_kind not in {"market", "synthetic", "user_supplied"}:
         raise ValueError("Unknown data_kind.")
     kind = "synthetic" if input_csv is None else data_kind
@@ -61,11 +66,17 @@ def run_walk_forward_experiment(
         "walk_forward": asdict(walk),
         "data_kind": kind,
         "input_csv": str(input_csv) if input_csv else None,
-        "protocol": "development outer folds select feature group; inner validation tunes Ridge; final holdout once; no refit",
+        "protocol": "outer development folds compare groups; inner validation selects candidates; explicit causal refit policy",
         "protocol_sha256": sha256_file(protocol_path) if protocol_path else None,
     }
-    with tracked_run(output_root, "walk_forward_ridge", settings) as (run, logger):
+    model_name = "walk_forward_return" if config.include_baselines else "walk_forward_ridge"
+    with tracked_run(output_root, model_name, settings) as (run, logger):
         frame = synthetic_close(config.seed) if input_csv is None else pd.read_csv(input_csv)
+        if walk.development_only:
+            if "Date" not in frame:
+                raise ValueError("CSV must have Date and Close columns for a single asset.")
+            dates = pd.to_datetime(frame.Date, utc=True, errors="raise")
+            frame = frame.loc[dates < pd.to_datetime(walk.final_holdout_start, utc=True)].copy()
         close = validate_close_frame(frame)
         snapshot = run / "input_snapshot.csv"
         close.to_csv(snapshot)
@@ -75,7 +86,7 @@ def run_walk_forward_experiment(
             holdout_start = int(len(close) * (1 - walk.final_holdout_fraction))
         else:
             holdout_start = int(close.index.searchsorted(pd.to_datetime(walk.final_holdout_start, utc=True)))
-        if len(close) - holdout_start < 5 or holdout_start - walk.validation_size < walk.min_train_size:
+        if (not walk.development_only and len(close) - holdout_start < 5) or holdout_start - walk.validation_size < walk.min_train_size:
             raise ValueError("Insufficient history before/within the final holdout.")
         if walk.min_train_size - max(config.lookbacks) - 1 < 12:
             raise ValueError("Insufficient common training targets for candidate lookbacks.")
@@ -90,7 +101,9 @@ def run_walk_forward_experiment(
         )
         if not folds:
             raise ValueError("No complete development folds before the final holdout.")
-        trial_budget = (len(folds) * len(walk.feature_groups) + 1) * len(config.lookbacks) * len(config.ridge_alphas)
+        child_count = len(folds) * len(walk.feature_groups) + (0 if walk.development_only else 1)
+        ridge_budget = child_count * len(config.lookbacks) * len(config.ridge_alphas)
+        trial_budget = ridge_budget + child_count * (2 if config.include_baselines else 0)
         if len(folds) > 32 or trial_budget > 1024:
             raise ValueError("Reference evaluation permits at most 32 folds and 1024 total Ridge trials.")
         split_record = {
@@ -98,7 +111,9 @@ def run_walk_forward_experiment(
             "step_size": walk.test_size,
             "overlapping_scored_targets": False,
             "final_holdout_start_index": holdout_start,
-            "final_holdout_first_target": str(close.index[holdout_start]),
+            "final_holdout_first_target": None if walk.development_only else str(close.index[holdout_start]),
+            "development_only": walk.development_only,
+            "development_before": walk.final_holdout_start if walk.development_only else None,
             "development_unscored_tail": [folds[-1].test.stop, holdout_start],
             "final_train_stop": holdout_start - walk.validation_size,
             "final_validation_stop": holdout_start,
@@ -157,9 +172,10 @@ def run_walk_forward_experiment(
                         "fold": i,
                         "feature_group": group,
                         "observations": len(predicted),
-                        "rmse": metrics["ridge_log_return"]["rmse"],
+                        "rmse": metrics[metric_name]["rmse"],
                         "baseline_rmse": metrics["zero_log_return"]["rmse"],
-                        "rmse_skill_vs_zero": metrics["ridge_log_return"]["rmse_skill_vs_zero"],
+                        "rmse_skill_vs_zero": metrics[metric_name]["rmse_skill_vs_zero"],
+                        "selected_estimator": json.loads((child / "artifacts/model.json").read_text(encoding="utf-8"))["estimator_kind"],
                         "child_run": child.relative_to(run).as_posix(),
                     }
                 )
@@ -173,21 +189,45 @@ def run_walk_forward_experiment(
             subset = development[development.feature_group == group]
             aggregate[group] = {
                 "observations": len(subset),
-                "ridge_log_return": _return_metrics(subset.actual_log_return, subset.predicted_log_return),
+                metric_name: _return_metrics(subset.actual_log_return, subset.predicted_log_return),
                 "zero_log_return": _return_metrics(subset.actual_log_return, np.zeros(len(subset))),
             }
+            aggregate[group]["always_up_directional_accuracy"] = float(np.mean(subset.actual_log_return > 0))
+            if "training_mean_log_return" in subset:
+                aggregate[group]["training_mean"] = _return_metrics(subset.actual_log_return, subset.training_mean_log_return)
+                baseline_error = aggregate[group]["training_mean"]["rmse"]
+                aggregate[group][metric_name]["rmse_skill_vs_training_mean"] = (
+                    1 - aggregate[group][metric_name]["rmse"] / baseline_error if baseline_error else None
+                )
         selected = groups[0]
         for group in groups[1:]:
-            if aggregate[group]["ridge_log_return"]["rmse"] < aggregate[selected]["ridge_log_return"]["rmse"] - 1e-12:
+            if aggregate[group][metric_name]["rmse"] < aggregate[selected][metric_name]["rmse"] - 1e-12:
                 selected = group
         selection = {
             "selected_feature_group": selected,
             "development_metrics": aggregate,
-            "selection_scope": "development outer predictions only; final holdout not yet scored",
+            "selection_scope": "development outer predictions only; final holdout not scored",
             "tie_policy": "Prefer simpler returns within absolute RMSE tolerance 1e-12",
         }
         # Persist the choice before opening the final evaluation stage.
         write_json(run / "selection.json", selection)
+        if walk.development_only:
+            write_json(run / "metrics.json", {
+                "development": aggregate, "selected_feature_group": selected, "folds": len(folds),
+                "actual_ridge_trials": ridge_budget, "actual_validation_candidates": trial_budget,
+                "final": {"status": "not_scored_development_only"},
+                "interpretation": "Exploratory development comparison; policy selection needs a separate future confirmation; no promotion",
+            })
+            (run / "summary.md").write_text(
+                f"# Development-only walk-forward\n\nAsset: {config.asset}; data kind: **{kind}**.\n\n"
+                f"Data strictly before: {walk.final_holdout_start}; complete folds: {len(folds)}; candidates: {trial_budget}.\n\n"
+                f"Refit policy: {config.refit_policy}; training window: {config.training_window}; selected group: {selected}.\n\n"
+                "All candidate trials, checkpoint scopes and fold baselines are retained. Final holdout was excluded. "
+                "Development results can guide selection but cannot confirm it. No profitability or promotion claim.\n",
+                encoding="utf-8",
+            )
+            logger.info("Development folds completed; final holdout excluded")
+            return run
         final = run_offline_experiment(
             snapshot,
             output_root=run / "final",
@@ -214,12 +254,12 @@ def run_walk_forward_experiment(
             f"# Walk-forward Ridge research\n\nAsset: {config.asset}; data kind: **{kind}**.\n\n"
             f"Development folds: {len(folds)}; trials: {trial_budget}; selected feature group: {selected}.\n"
             f"Unscored development tail (exclusive indices): {split_record['development_unscored_tail']}.\n\n"
-            f"Final return RMSE: {final_metrics['ridge_log_return']['rmse']:.8f}; "
+            f"Final return RMSE: {final_metrics[metric_name]['rmse']:.8f}; "
             f"zero-return RMSE: {final_metrics['zero_log_return']['rmse']:.8f}; "
-            f"skill: {final_metrics['ridge_log_return']['rmse_skill_vs_zero']}.\n\n"
+            f"skill: {final_metrics[metric_name]['rmse_skill_vs_zero']}.\n\n"
             "Development outer folds select the feature group; inner validation selects lookback/alpha. "
-            "Each child model/scaler is trained only on its training interval, with no refit. "
-            "The selected final model is frozen across final origins, which receive observed prior history.\n\n"
+            f"Refit policy: {config.refit_policy}; training window: {config.training_window}. "
+            "Each forecast uses only observations available at its origin.\n\n"
             "Every child includes training ACF/PACF/ADF/KPSS, all trials, predictions, artifacts and a reload check. "
             "No trading backtest, point-in-time data guarantee, statistical significance or market-wide edge is claimed. "
             "Do not retune from the final metrics. See selection.json, fold_metrics.csv and child manifests.\n",
