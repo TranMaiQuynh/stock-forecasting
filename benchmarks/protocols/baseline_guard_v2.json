@@ -1,0 +1,32 @@
+{
+  "protocol_id": "baseline-guard-development-v2",
+  "registered_on": "2026-11-14",
+  "status": "exploratory_development_only",
+  "hypothesis": "Baseline-eligible selection, sample-scaled shrinkage and causal monthly refitting may improve stability; improvement is not assumed",
+  "assets": ["AAPL", "MSFT"],
+  "data": "Reuse the exact verified v1 adjusted-close snapshots; no new acquisition",
+  "development_before": "2023-01-01",
+  "known_final_period": "2023-2025 was inspected; exclude it from this implementation and research selection",
+  "feature_group": "returns",
+  "lookbacks": [1, 5, 10],
+  "ridge_lambdas": [0.001, 0.1, 10.0],
+  "ridge_alpha_definition": "training_sample_count * lambda, recomputed at every fit",
+  "baselines": ["zero", "training_mean"],
+  "policies": [
+    {"name": "frozen_expanding", "refit_policy": "frozen", "training_window": null},
+    {"name": "frozen_756", "refit_policy": "frozen", "training_window": 756},
+    {"name": "monthly_expanding", "refit_policy": "monthly", "training_window": null},
+    {"name": "monthly_756", "refit_policy": "monthly", "training_window": 756}
+  ],
+  "training_window_unit": "latest eligible training target observations, identical for all lookbacks",
+  "refit_contract": "Validation candidates start at training cutoff; monthly refits use labels observed by origin only. After selection monthly test starts with a refit through validation, then refits when the observed origin enters a new calendar month. Frozen candidates never refit",
+  "selection": "Inner chronological validation RMSE, tie tolerance 1e-12; prefer zero, training_mean, then Ridge in recorded order. Outer development folds compare the four policies",
+  "development": {"min_train_size": 756, "validation_size": 126, "test_size": 126, "step_size": 126},
+  "budget": {"candidates_per_policy_per_fold": 11, "policies": 4, "folds_per_asset": 8, "assets": 2, "total_validation_candidates": 704},
+  "uncertainty": {"method": "paired circular moving-block bootstrap", "block_length": 20, "replicates": 2000, "seed": 42, "coverage": 0.95, "interpretation": "exploratory marginal intervals; no multiplicity correction or significance claim after policy selection"},
+  "metrics": ["log_return_rmse", "mae", "rmse_skill_vs_zero", "rmse_skill_vs_training_mean", "directional_accuracy", "always_up_directional_accuracy"],
+  "confirmation": {"status": "pending_future_evaluation", "prospective_origin_not_before": "2026-11-16", "rule": "Freeze the selected method before collecting prospective predictions; only labels observed after recorded predictions can confirm it"},
+  "promotion": "disabled",
+  "execution": "withheld_no_execution_contract",
+  "stop_rule": "Report every policy and negative result; do not expand this grid based on results. If no robust improvement emerges, retain the baseline and reassess the return-prediction task"
+}
