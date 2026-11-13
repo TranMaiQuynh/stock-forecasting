@@ -19,6 +19,11 @@ def _add_research_options(parser):
     parser.add_argument("--data-kind", choices=["user_supplied", "market", "synthetic"], default="user_supplied")
     parser.add_argument("--lookbacks", nargs="+", type=int, default=[1, 5, 10])
     parser.add_argument("--ridge-alphas", nargs="+", type=float, default=[1.0, 10.0])
+    parser.add_argument("--include-baselines", action="store_true", help="Allow zero and training-mean forecasts to win validation.")
+    parser.add_argument("--penalty-mode", choices=["absolute", "per_sample"], default="absolute",
+                        help="With per_sample, --ridge-alphas supplies lambda and each fit uses alpha=n_train*lambda.")
+    parser.add_argument("--refit-policy", choices=["frozen", "monthly"], default="frozen")
+    parser.add_argument("--training-window", type=int, help="Latest eligible training targets per fit; omitted means expanding history.")
     parser.add_argument("--max-analysis-lag", type=int, default=20)
     parser.add_argument("--diagnostic-alpha", type=float, default=0.05)
     parser.add_argument("--seed", type=int, default=42)
@@ -92,6 +97,7 @@ def _build_parser() -> argparse.ArgumentParser:
     walk.add_argument(
         "--feature-groups", nargs="+", choices=["returns", "returns_abs"], default=["returns", "returns_abs"]
     )
+    walk.add_argument("--development-only", action="store_true", help="Exclude all observations at/after --final-holdout-start; do not score a final holdout.")
 
     acquire = subparsers.add_parser(
         "acquire", help="Download and validate a daily adjusted Yahoo snapshot (requires network)."
@@ -107,7 +113,7 @@ def _build_parser() -> argparse.ArgumentParser:
     predict = subparsers.add_parser(
         "predict", help="Predict the next observation from a saved numerical model and CSV history."
     )
-    predict.add_argument("--run-dir", required=True, help="Completed ridge_log_return child run containing the model.")
+    predict.add_argument("--run-dir", required=True, help="Completed numerical Ridge/baseline child run containing the model.")
     predict.add_argument("--csv", required=True)
     predict.add_argument("--asset", required=True, help="Must match the source model asset.")
     predict.add_argument("--output-root", default="log")
@@ -151,6 +157,10 @@ def main(argv=None) -> int:
             diagnostic_alpha=args.diagnostic_alpha,
             seed=args.seed,
             feature_group=getattr(args, "feature_group", "returns"),
+            include_baselines=args.include_baselines,
+            penalty_mode=args.penalty_mode,
+            refit_policy=args.refit_policy,
+            training_window=args.training_window,
         )
         if args.command == "walk-forward":
             from .walk_forward import WalkForwardConfig, run_walk_forward_experiment
@@ -162,6 +172,7 @@ def main(argv=None) -> int:
                 final_holdout_start=args.final_holdout_start,
                 final_holdout_fraction=args.final_holdout_fraction,
                 feature_groups=tuple(args.feature_groups),
+                development_only=args.development_only,
             )
             output = run_walk_forward_experiment(
                 args.csv,
