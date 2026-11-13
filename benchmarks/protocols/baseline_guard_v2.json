@@ -20,7 +20,7 @@
   ],
   "training_window_unit": "latest eligible training target observations, identical for all lookbacks",
   "refit_contract": "Validation candidates start at training cutoff; monthly refits use labels observed by origin only. After selection monthly test starts with a refit through validation, then refits when the observed origin enters a new calendar month. Frozen candidates never refit",
-  "selection": "Inner chronological validation RMSE, tie tolerance 1e-12; prefer zero, training_mean, then Ridge in recorded order. Outer development folds compare the four policies",
+  "selection": "Inner chronological validation RMSE, tie tolerance 1e-12; prefer zero, training_mean, then Ridge in recorded order. Outer development folds compare the four policies; policy ties within 1e-12 prefer recorded policy order",
   "development": {"min_train_size": 756, "validation_size": 126, "test_size": 126, "step_size": 126},
   "budget": {"candidates_per_policy_per_fold": 11, "policies": 4, "folds_per_asset": 8, "assets": 2, "total_validation_candidates": 704},
   "uncertainty": {"method": "paired circular moving-block bootstrap", "block_length": 20, "replicates": 2000, "seed": 42, "coverage": 0.95, "interpretation": "exploratory marginal intervals; no multiplicity correction or significance claim after policy selection"},
