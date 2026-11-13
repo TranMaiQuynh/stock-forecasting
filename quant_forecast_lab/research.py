@@ -30,6 +30,10 @@ class ResearchConfig:
     diagnostic_alpha: float = 0.05
     seed: int = 42
     feature_group: str = "returns"
+    include_baselines: bool = False
+    penalty_mode: str = "absolute"
+    refit_policy: str = "frozen"
+    training_window: int | None = None
 
     def validate(self):
         if not self.asset.strip():
@@ -42,7 +46,7 @@ class ResearchConfig:
             raise ValueError("ridge_alphas must be finite and positive.")
         if len(set(self.lookbacks)) != len(self.lookbacks) or len(set(self.ridge_alphas)) != len(self.ridge_alphas):
             raise ValueError("Candidate settings must be distinct.")
-        if len(self.lookbacks) * len(self.ridge_alphas) > 64:
+        if len(self.lookbacks) * len(self.ridge_alphas) + (2 if self.include_baselines else 0) > 64:
             raise ValueError("This small reference experiment permits at most 64 trials.")
         if not 0 < self.train_fraction < 1 or not 0 < self.validation_fraction < 1:
             raise ValueError("Split fractions must be between zero and one.")
@@ -58,6 +62,16 @@ class ResearchConfig:
             raise ValueError("diagnostic_alpha must be between zero and one.")
         if isinstance(self.seed, bool) or not isinstance(self.seed, int) or self.seed < 0:
             raise ValueError("seed must be a nonnegative integer.")
+        if not isinstance(self.include_baselines, bool):
+            raise ValueError("include_baselines must be boolean.")
+        if self.penalty_mode not in {"absolute", "per_sample"}:
+            raise ValueError("penalty_mode must be absolute or per_sample.")
+        if self.refit_policy not in {"frozen", "monthly"}:
+            raise ValueError("refit_policy must be frozen or monthly.")
+        if self.training_window is not None and (
+            isinstance(self.training_window, bool) or not isinstance(self.training_window, int) or self.training_window < 12
+        ):
+            raise ValueError("training_window must be None or an integer of at least 12 target observations.")
 
 
 def validate_close_frame(frame: pd.DataFrame) -> pd.DataFrame:
@@ -177,7 +191,7 @@ def _figures(predictions, close, train_end, validation_end, directory, label):
     test = predictions[predictions.split == "test"]
     times = pd.to_datetime(test.target_timestamp)
     axes[1].plot(times, test.actual_log_return, label="Actual")
-    axes[1].plot(times, test.predicted_log_return, label="Ridge")
+    axes[1].plot(times, test.predicted_log_return, label="Selected model")
     axes[1].axhline(0, color="black", linewidth=0.7, label="Zero-return baseline")
     axes[1].set(
         title="One-step test forecasts from observed prior history", ylabel="Log return", xlabel="Target observation"
@@ -197,10 +211,9 @@ def run_offline_experiment(
     input_csv=None explicitly generates a labelled synthetic smoke experiment.
     This is a reference pipeline, not a replacement for legacy neural training.
     """
-    from sklearn.linear_model import Ridge
-    from sklearn.pipeline import make_pipeline
-    from sklearn.preprocessing import StandardScaler
     from statsmodels.stats.diagnostic import acorr_ljungbox
+
+    from .selection import select_return_model
 
     config = config or ResearchConfig()
     config.validate()
@@ -211,10 +224,12 @@ def run_offline_experiment(
         **asdict(config),
         "data_kind": kind,
         "input_csv": str(input_csv) if input_csv else None,
-        "protocol": "fixed chronological holdout; validation selects Ridge; no refit; no trading simulation",
+        "protocol": "chronological validation selects a fixed candidate; explicit causal refit policy; no trading simulation",
         "explicit_split_boundaries": split_boundaries,
     }
-    with tracked_run(output_root, "ridge_log_return", settings) as (run, logger):
+    model_name = "return_forecast" if config.include_baselines else "ridge_log_return"
+    metric_name = "selected_log_return" if config.include_baselines else "ridge_log_return"
+    with tracked_run(output_root, model_name, settings) as (run, logger):
         raw = synthetic_close(config.seed) if input_csv is None else pd.read_csv(input_csv)
         close = validate_close_frame(raw)
         if split_boundaries is None:
@@ -254,7 +269,9 @@ def run_offline_experiment(
         split_record = {
             "horizon": 1,
             "target": "next_observation_log_return",
-            "refit": False,
+            "refit": config.refit_policy != "frozen",
+            "refit_policy": config.refit_policy,
+            "training_window": config.training_window,
             "window_order": "return_lag_1 (latest observed) through return_lag_L",
             "common_training_targets": True,
             "training_series_end_exclusive": train_end,
@@ -268,65 +285,23 @@ def run_offline_experiment(
             }
         write_json(run / "split_manifest.json", split_record)
         logger.info("Schema passed; train=%s validation=%s test=%s", train.sum(), validation.sum(), test.sum())
+        diagnostic_start = max(0, train_end - config.training_window - max(config.lookbacks) - 1) if config.training_window else 0
         write_training_diagnostics(
-            close.Close.iloc[:train_end],
+            close.Close.iloc[diagnostic_start:train_end],
             run / "analysis",
             max_analysis_lag=config.max_analysis_lag,
             alpha=config.diagnostic_alpha,
             label=f"{kind.upper()} | {config.asset} | {run.name}",
         )
         logger.info("Training-only stationarity and correlation diagnostics saved")
-        trials, best = [], None
-        for lookback in config.lookbacks:
-            x, y = feature_windows(close.Close, targets, lookback, config.feature_group)
-            for ridge_alpha in config.ridge_alphas:
-                model = make_pipeline(StandardScaler(), Ridge(alpha=ridge_alpha, solver="svd"))
-                try:
-                    model.fit(x[train], y[train])
-                    prediction = model.predict(x[validation])
-                    score = rmse(y[validation], prediction)
-                except Exception as exc:
-                    trials.append(
-                        {
-                            "lookback": lookback,
-                            "ridge_alpha": ridge_alpha,
-                            "status": "failed",
-                            "error_type": type(exc).__name__,
-                            "error": str(exc),
-                        }
-                    )
-                    pd.DataFrame(trials).to_csv(run / "trials.csv", index=False)
-                    raise
-                trials.append(
-                    {
-                        "lookback": lookback,
-                        "ridge_alpha": ridge_alpha,
-                        "training_samples": int(train.sum()),
-                        "validation_samples": int(validation.sum()),
-                        "validation_return_rmse": score,
-                        "status": "completed",
-                    }
-                )
-                pd.DataFrame(trials).to_csv(run / "trials.csv", index=False)
-                logger.info("Trial lookback=%d ridge_alpha=%g validation_return_rmse=%g", lookback, ridge_alpha, score)
-                if best is None or score < best[0]:
-                    best = score, lookback, ridge_alpha, model
-        _, lookback, ridge_alpha, model = best
+        selected = select_return_model(close, targets, train_end, validation_end, config, run)
+        model_record = selected["model_record"]
+        lookback, ridge_alpha = model_record["lookback"], model_record["ridge_alpha"]
+        predicted = selected["predicted"]
         x, y = feature_windows(close.Close, targets, lookback, config.feature_group)
-        scaler, estimator = model.steps[0][1], model.steps[1][1]
         feature_order = _feature_order(lookback, config.feature_group)
-        model_record = {
-            "schema_version": 1,
-            "target": "next_observation_log_return",
-            "lookback": lookback,
-            "ridge_alpha": ridge_alpha,
-            "feature_group": config.feature_group,
-            "feature_order": feature_order,
-            "mean": scaler.mean_.tolist(),
-            "scale": scaler.scale_.tolist(),
-            "coef": estimator.coef_.tolist(),
-            "intercept": float(estimator.intercept_),
-        }
+        split_record["model_fit_cutoff"] = model_record["fit_cutoff"]
+        write_json(run / "split_manifest.json", split_record)
         artifact = run / "artifacts/model.json"
         write_json(artifact, model_record)
         write_json(
@@ -344,22 +319,24 @@ def run_offline_experiment(
                 "base_series": 1,
                 "selected_lookback": lookback,
                 "scalar_features": x.shape[1],
-                "training_shape": list(x[train].shape),
-                "fitted_coefficients": x.shape[1] + 1,
-                "selection": "validation RMSE; no ACF significance filter",
+                "training_shape": [min(int(train.sum()), config.training_window or int(train.sum())), x.shape[1]],
+                "fitted_coefficients": x.shape[1] + 1 if model_record["estimator_kind"] == "ridge" else int(model_record["estimator_kind"] == "training_mean"),
+                "selection": "chronological validation RMSE; baselines eligible when configured; no ACF significance filter",
+                "diagnostic_scope": "initial fit history only; later fit scopes in fit_history.json; diagnostics do not select refits",
                 "independent_samples": False,
                 "feature_group": config.feature_group,
                 "definitions": "signed return lags; optional absolute values of the identical observed lags",
             },
         )
         (run / "model_summary.txt").write_text(
-            "StandardScaler -> Ridge(solver=svd)\nTarget: one-step log return\n"
+            f"Selected estimator: {model_record['estimator_kind']}\nTarget: one-step log return\n"
             f"Input shape: {x[train].shape}\nLookback: {lookback}\nRidge alpha: {ridge_alpha}\n"
-            f"Coefficients including intercept: {x.shape[1] + 1}\nFeature order: {feature_order}\n"
-            "Fit scope: training only. Validation selects configuration. No refit. No epochs.\n",
+            f"Numerical coefficients including intercept: {x.shape[1] + 1}\nFeature order: {feature_order}\n"
+            f"Fit cutoff: {model_record['fit_cutoff']}; refit policy: {config.refit_policy}.\n"
+            f"Training samples at exported checkpoint: {model_record['training_samples']}; penalty mode: {config.penalty_mode}.\n"
+            "Every checkpoint and preprocessing state is recorded; no epochs.\n",
             encoding="utf-8",
         )
-        predicted = model.predict(x)
         values = close.Close.to_numpy()
         rows = []
         for split_name, mask in (("validation", validation), ("test", test)):
@@ -368,7 +345,8 @@ def run_offline_experiment(
                 rows.append(
                     {
                         "run_id": run.name,
-                        "model": "ridge_log_return",
+                        "model": model_record["estimator_kind"],
+                        "model_artifact": selected["model_paths"][int(t)],
                         "asset": config.asset,
                         "split": split_name,
                         "forecast_origin": str(close.index[t - 1]),
@@ -384,22 +362,31 @@ def run_offline_experiment(
                     }
                 )
         predictions = pd.DataFrame(rows)
+        if selected["training_mean_predictions"] is not None:
+            predictions["training_mean_log_return"] = selected["training_mean_predictions"]
         if not np.isfinite(predictions.select_dtypes(include="number")).all().all():
             raise ValueError("Predictions overflowed or contain nonfinite values.")
         predictions.to_csv(run / "predictions.csv", index=False)
-        reloaded = [predict_saved_model(artifact, values[:t]) for t in targets[test]]
+        reloaded = [predict_saved_model(run / selected["model_paths"][int(t)], values[:t]) for t in targets[test]]
         np.testing.assert_allclose(reloaded, predicted[test], rtol=1e-10, atol=1e-12)
         metrics = {}
         for name in ("validation", "test"):
             subset = predictions[predictions.split == name]
             metrics[name] = {
                 "observations": len(subset),
-                "ridge_log_return": _return_metrics(subset.actual_log_return, subset.predicted_log_return),
+                metric_name: _return_metrics(subset.actual_log_return, subset.predicted_log_return),
                 "zero_log_return": _return_metrics(subset.actual_log_return, np.zeros(len(subset))),
-                "ridge_price": evaluate_price_forecast(
+                ("selected_price" if config.include_baselines else "ridge_price"): evaluate_price_forecast(
                     subset.actual_close, subset.predicted_close, subset.origin_close
                 ).as_dict(),
             }
+            metrics[name]["always_up_directional_accuracy"] = float(np.mean(subset.actual_log_return > 0))
+            if "training_mean_log_return" in subset:
+                metrics[name]["training_mean"] = _return_metrics(subset.actual_log_return, subset.training_mean_log_return)
+                baseline_error = metrics[name]["training_mean"]["rmse"]
+                metrics[name][metric_name]["rmse_skill_vs_training_mean"] = (
+                    1 - metrics[name][metric_name]["rmse"] / baseline_error if baseline_error else None
+                )
         write_json(run / "metrics.json", metrics)
         residuals = predictions.loc[predictions.split == "test", "actual_log_return"].to_numpy() - predicted[test]
         residual_report = {
@@ -429,6 +416,8 @@ def run_offline_experiment(
             "actual": None,
             "data_kind": kind,
             "asset": config.asset,
+            "estimator_kind": model_record["estimator_kind"],
+            "model_fit_cutoff": model_record["fit_cutoff"],
             "predicted_log_return": predict_saved_model(artifact, values),
         }
         future["predicted_close"] = float(values[-1] * np.exp(future["predicted_log_return"]))
@@ -449,7 +438,9 @@ def run_offline_experiment(
             {
                 "artifact_reload": "verified",
                 "uncertainty": "not_implemented",
-                "walk_forward_training": "not_implemented_in_this_runner",
+                "walk_forward_training": config.refit_policy,
+                "training_window": config.training_window,
+                "fit_checkpoints": selected["fit_count"],
                 "backtest": "withheld_no_execution_contract",
                 "learning_curve": "not_applicable_closed_form_ridge",
                 "feature_group_ablation": "single group only; compare groups with the walk-forward orchestrator",
@@ -457,14 +448,15 @@ def run_offline_experiment(
         )
         (run / "summary.md").write_text(
             f"# Offline research run\n\nData kind: **{kind}**; asset: {config.asset}.\n\n"
-            f"Selected lookback: {lookback}; Ridge alpha: {ridge_alpha}. No refit.\n\n"
+            f"Selected estimator: {model_record['estimator_kind']}; lookback: {lookback}; Ridge alpha: {ridge_alpha}.\n\n"
+            f"Refit policy: {config.refit_policy}; training window: {config.training_window}; penalty mode: {config.penalty_mode}.\n\n"
             f"Feature group: {config.feature_group}.\n\n"
-            f"Test log-return RMSE: {metrics['test']['ridge_log_return']['rmse']:.8f}.\n"
+            f"Test log-return RMSE: {metrics['test'][metric_name]['rmse']:.8f}.\n"
             f"Zero-return RMSE: {metrics['test']['zero_log_return']['rmse']:.8f}.\n\n"
-            "Training-only diagnostics are exploratory. Validation chose the Ridge configuration; "
+            "Initial-training diagnostics are exploratory. Validation chose the candidate; "
             "the final test was only scored after selection. No claim of market improvement or promotion.\n\n"
-            "Artifact reload checked on every test origin. No calibrated uncertainty, "
-            "walk-forward training, execution simulation or deployment is claimed.\n",
+            "Each test origin was checked against its own saved checkpoint. Refer to fit_history.json for every fit cutoff. "
+            "No calibrated uncertainty, execution simulation or deployment is claimed.\n",
             encoding="utf-8",
         )
         required = [
