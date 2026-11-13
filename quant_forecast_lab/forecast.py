@@ -32,8 +32,8 @@ def run_saved_forecast(run_directory, input_csv, *, asset, output_root="log"):
     }
     with tracked_run(output_root, "saved_ridge_forecast", settings) as (run, logger):
         verified = verify_run(source)
-        if verified["model_name"] != "ridge_log_return":
-            raise ValueError("Expected a completed numerical Ridge research run.")
+        if verified["model_name"] not in {"ridge_log_return", "return_forecast"}:
+            raise ValueError("Expected a completed numerical return research run.")
         manifest = json.loads((source / "manifest.json").read_text(encoding="utf-8"))
         required = {"artifacts/model.json", "data_manifest.json", "split_manifest.json"}
         if not required <= set(manifest["artifact_sha256"]):
@@ -53,8 +53,13 @@ def run_saved_forecast(run_directory, input_csv, *, asset, output_root="log"):
         close = validate_close_frame(pd.read_csv(input_csv))
         origin = close.index[-1]
         available_after = pd.to_datetime(split["validation"]["last_target"], utc=True, errors="raise")
+        if split.get("model_fit_cutoff") is not None:
+            fitted_through = pd.to_datetime(split["model_fit_cutoff"], utc=True, errors="raise")
+            if pd.isna(fitted_through):
+                raise ValueError("Source model fit cutoff must be a valid timestamp.")
+            available_after = max(available_after, fitted_through)
         if pd.isna(available_after) or origin < available_after:
-            raise ValueError("Forecast origin precedes the source model's configuration-selection cutoff.")
+            raise ValueError("Forecast origin precedes the source model's selection or fit cutoff.")
         close.to_csv(run / "input_snapshot.csv")
         artifact = run / "artifacts/model.json"
         artifact.parent.mkdir(parents=True)
@@ -62,6 +67,7 @@ def run_saved_forecast(run_directory, input_csv, *, asset, output_root="log"):
         if sha256_file(artifact) != manifest["artifact_sha256"]["artifacts/model.json"]:
             raise ValueError("Copied model artifact failed checksum validation.")
         predicted = predict_saved_model(artifact, close.Close)
+        model_record = json.loads(artifact.read_text(encoding="utf-8"))
         origin_close = float(close.Close.iloc[-1])
         with np.errstate(over="ignore", under="ignore"):
             predicted_close = float(origin_close * np.exp(predicted))
@@ -71,6 +77,7 @@ def run_saved_forecast(run_directory, input_csv, *, asset, output_root="log"):
             "asset": asset,
             "data_kind": "user_supplied",
             "model_data_kind": data["data_kind"],
+            "estimator_kind": model_record.get("estimator_kind", "ridge"),
             "forecast_origin": str(origin),
             "target_timestamp": None,
             "target_policy": "next observed close; calendar date not guessed",
