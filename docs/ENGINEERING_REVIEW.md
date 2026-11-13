@@ -8,7 +8,32 @@ as historical evidence. See the layout-cleanup record at the end of this file.
 Review date: 2026-11-11. Scope: imported Quant Forecast Lab source inside
 `D:/Github/StockForecasting`; parent Git branch `main`, HEAD `2557a56`.
 
-## Current execution (2026-11-12)
+## Current execution (2026-11-14)
+
+### Baseline-eligible adaptive forecasting
+
+The owner authorized implementing the reviewed research improvements. Starting
+HEAD is `9126fc5`; the existing untracked Vietnamese development note is user
+work and is excluded from edits/commits. Baseline verification: **142 passed,
+24 warnings**, supported Windows runtime, no exclusions; evidence is
+`log/validation_20261114/baseline.txt`.
+
+| Task ID | Priority | Component | Issue | Action | Verification | Status | Commit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| V01 | P0 | Research protocol | Previously inspected holdout cannot confirm new changes | Register bounded development-only v2, exclude 2023 onward; reserve future confirmation | Protocol JSON and fixed trial budget; no acquisition | IN_PROGRESS | pending |
+| V02 | P1 | Selection | Ridge must win even when baselines are better; penalties narrowly scaled | Add baseline-eligible validation and alpha=n*lambda through existing runner | Hand-calculated baselines, normalized penalties, tie/failure and causal-fit regressions | TODO | pending |
+| V03 | P1 | Model updates | Fixed model can age; refits need explicit information boundaries | Implement frozen/monthly and expanding/rolling fit scopes with every numerical checkpoint retained | Future mutation, observed-origin refit schedule, fit/selection cutoff and reload tests | TODO | pending |
+| V04 | P1 | Development evaluation | New method needs fair baseline comparisons and uncertainty | Reuse walk-forward orchestration with development-only mode; paired block intervals; bounded market replay | All folds/policies, independent metric recomputation and source/data integrity | TODO | pending |
+| V05 | P2 | Handoff | New contracts need an understandable, reproducible entry point | CLI, saved prediction compatibility, learner explanation and measured report | Full regression suite, offline smoke, one-file commits and hosted CI | TODO | pending |
+
+KEEP existing preprocessing, diagnostics, numerical artifacts and logging.
+EXTEND the existing research/walk-forward runners; preserve their default v1
+behavior. DEFER new features, neural models, volatility targets and execution
+until these bounded comparisons establish whether the basic changes help.
+Production operation and profitability remain unverified; prospective labels
+after the new protocol cannot be manufactured or replaced with old test data.
+
+## Previous execution (2026-11-12)
 
 ### Continuation: reproducible research handoff
 
