@@ -109,7 +109,12 @@ def select_return_model(close, targets, train_end, validation_end, config, run):
 
     best_index, best_score = None, float("inf")
     for i, candidate in enumerate(candidates):
-        row = {"trial": i, **candidate, "penalty_mode": config.penalty_mode}
+        row = {
+            "trial": i, **candidate, "penalty_mode": config.penalty_mode,
+            "ridge_alpha": candidate["penalty"] if config.penalty_mode == "absolute" else None,
+            "training_samples": min(train_end - first_target, config.training_window or train_end),
+            "validation_samples": validation_end - train_end,
+        }
         try:
             predicted, paths, checkpoint = replay(
                 candidate, train_end, validation_end, f"artifacts/trials/trial_{i:03d}/validation"
@@ -124,7 +129,7 @@ def select_return_model(close, targets, train_end, validation_end, config, run):
         trials.append(row)
         pd.DataFrame(trials).to_csv(run / "trials.csv", index=False)
         validation_results.append((predicted, paths, checkpoint))
-        if score < best_score - 1e-12:
+        if score < best_score - (1e-12 if config.include_baselines else 0):
             best_index, best_score = i, score
     candidate = candidates[best_index]
     write_json(run / "selection.json", {
