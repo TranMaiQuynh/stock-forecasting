@@ -24,7 +24,7 @@ work and is excluded from edits/commits. Baseline verification: **142 passed,
 | V02 | P1 | Selection | Ridge must win even when baselines are better; penalties narrowly scaled | Add baseline-eligible validation and alpha=n*lambda through existing runner | Hand-calculated baselines, normalized penalties, deterministic ties and failure checks pass | DONE | `4143f3f`, `f9cc946` |
 | V03 | P1 | Model updates | Fixed model can age; refits need explicit information boundaries | Implement frozen/monthly and expanding/rolling scopes with every numerical checkpoint retained | Future mutation, observed-origin schedule, origin availability and per-origin reload checks pass | DONE | `f9cc946`, `39447d1`, `4ed7a93` |
 | V04 | P1 | Development evaluation | New method needs fair baseline comparisons and uncertainty | Reuse walk-forward orchestration with development-only mode; paired block intervals; bounded market replay | All 8 comparisons/704 candidates; 73 clean manifests, 3,160 fit states and 8,064 reloads independently checked | DONE | `7597cfb` |
-| V05 | P2 | Handoff | New contracts need an understandable, reproducible entry point | CLI, saved prediction compatibility, learner explanation and measured report | 184 full tests passed before final bookkeeping regression; CLI train/verify/predict smoke; final replay/CI pending | IN_PROGRESS | `fc80481`, `379dcae` |
+| V05 | P2 | Handoff | New contracts need an understandable, reproducible entry point | CLI, saved prediction compatibility, learner explanation and measured report | Clean checkout/independent venv: 185 tests, 14 stages; hosted Linux offline CI succeeded at 336d9c3; final publication receipt records the documentation SHA | DONE | `336d9c3`, `fc80481` |
 | V06 | P1 | Independent confirmation | Future predictions and their labels do not yet exist | Freeze method and prospectively record predictions with origin no earlier than 2026-11-16, then evaluate delayed labels | Protocol registered; no future forecasts or independent confirmation claimed | BLOCKED | future observations required |
 
 KEEP existing preprocessing, diagnostics, numerical artifacts and logging.
@@ -57,6 +57,20 @@ All results, including negative policies, are published in
 [the measured report](../benchmarks/results/2026-11-14-adaptive-development.json)
 and [figure](../benchmarks/results/2026-11-14-adaptive-development.png).
 
+Final clean replay: `log/clean_replay/20261114T003814Z_1d109a7e/`, source
+`336d9c30531fafdfc92404c4670aacfb899434bb`, independent Python 3.12 environment
+and checksum-provisioned fixtures: **185 passed, 33 warnings**, no exclusions
+or skipped tests; all 14 stages passed including train/verify/predict/verify.
+Warnings remain upstream pandas/Keras/timezone notices. The subsequent
+tie-tolerance metadata clarification passed all eight selection regressions;
+it changes no numerical policy or recorded market result.
+
+[Hosted run 43536926997](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/43536926997)
+passed Linux offline lint, tests and both synthetic policy demos at `336d9c3`.
+Full TensorFlow runtime verification remains the separate Windows replay;
+no Linux neural-runtime coverage is claimed. Final Git/CI receipts are local
+under `log/validation_20261114/` after publication.
+
 Reassessment (0-5, evidence-based; whole repository):
 
 | Dimension | Score | Evidence | Remaining weakness / next gate |
@@ -66,7 +80,7 @@ Reassessment (0-5, evidence-based; whole repository):
 | Functional correctness | 3 | Default Ridge parity, baseline selection, refit cutoff and checkpoint reload verified | Full external/upstream workflow matrix not replayed |
 | ML correctness | 3 | Chronological selection, common targets, causal refits and future-mutation tests | No independent evidence of generalization improvement |
 | Reproducibility | 3 | Registered grid, clean-clone execution, immutable snapshots and source/config/artifact hashes | No cross-platform hash lock; raw snapshots/reference fixtures are local |
-| Testing/reliability | 3 | 184 full tests at initial integration; audit covers every refit and scored origin | Final 185-test replay and new hosted CI remain in V05 until verified |
+| Testing/reliability | 3 | 185 tests from independent checkout/venv, hosted Linux offline CI and every fit/origin audited | Linux neural runtime, GPU behavior and long-running operation unverified |
 | E2E pipeline | 3 | CSV to diagnostics, candidate selection, refits, evaluation, report and saved inference | Prospective collection and delayed-label evaluation not implemented |
 | Deployment | 1 | Validated offline batch CLI | No scheduler, service SLO, monitoring, rollback or execution contract |
 | Documentation/DX | 3 | Learner explanations, commands, all-policy measured evidence | Exact replay needs authorized local data/artifacts |
