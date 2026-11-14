@@ -49,8 +49,8 @@ def run_walk_forward_experiment(
 ) -> Path:
     """Select a feature group on development folds, then score one final holdout.
 
-    Each child calls run_offline_experiment: train-only diagnostics/scaling,
-    validation-only hyperparameters, no refit and a reload check at every origin.
+    Each child calls run_offline_experiment: causal diagnostics/scaling,
+    validation-only selection, explicit refits and a reload check at every origin.
     Development outer tests can select the group; the final holdout cannot.
     """
     config = config or ResearchConfig()
@@ -246,12 +246,13 @@ def run_walk_forward_experiment(
             "final": final_metrics,
             "final_child_run": final.relative_to(run).as_posix(),
             "folds": len(folds),
-            "actual_ridge_trials": trial_budget,
+            "actual_ridge_trials": ridge_budget,
+            "actual_validation_candidates": trial_budget,
             "interpretation": "Negative results retained. Final holdout is reporting only; no retuning or promotion.",
         }
         write_json(run / "metrics.json", report)
         (run / "summary.md").write_text(
-            f"# Walk-forward Ridge research\n\nAsset: {config.asset}; data kind: **{kind}**.\n\n"
+            f"# Walk-forward return research\n\nAsset: {config.asset}; data kind: **{kind}**.\n\n"
             f"Development folds: {len(folds)}; trials: {trial_budget}; selected feature group: {selected}.\n"
             f"Unscored development tail (exclusive indices): {split_record['development_unscored_tail']}.\n\n"
             f"Final return RMSE: {final_metrics[metric_name]['rmse']:.8f}; "
