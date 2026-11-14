@@ -136,7 +136,8 @@ def select_return_model(close, targets, train_end, validation_end, config, run):
         "selected_trial": best_index, "selected_candidate": candidate,
         "validation_return_rmse": best_score,
         "selection_cutoff": str(close.index[validation_end - 1]),
-        "tie_policy": "recorded candidate order within absolute RMSE tolerance 1e-12",
+        "tie_policy": "recorded candidate order within the stated absolute RMSE tolerance",
+        "tie_tolerance": 1e-12 if config.include_baselines else 0.0,
         "refit_policy": config.refit_policy, "training_window": config.training_window,
     })
     valid_predicted, valid_paths, validation_checkpoint = validation_results[best_index]
