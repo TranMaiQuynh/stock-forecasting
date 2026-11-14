@@ -44,3 +44,17 @@ def test_development_runner_excludes_known_holdout_and_retains_every_candidate(t
 def test_development_cutoff_must_be_explicit_and_valid(settings):
     with pytest.raises(ValueError):
         WalkForwardConfig(**settings).validate()
+
+
+def test_baseline_candidates_are_counted_separately_from_ridge_fits(tmp_path):
+    frame = synthetic_close().iloc[:120]
+    source = tmp_path / "input.csv"
+    frame.to_csv(source, index=False)
+    config = ResearchConfig(lookbacks=(1,), ridge_alphas=(0.1,), include_baselines=True, max_analysis_lag=3)
+    walk = WalkForwardConfig(min_train_size=50, validation_size=10, test_size=30,
+                             final_holdout_start=str(frame.Date.iloc[90]), feature_groups=("returns",))
+    run = run_walk_forward_experiment(source, output_root=tmp_path / "runs", config=config, walk_config=walk)
+    result = json.loads((run / "metrics.json").read_text())
+    assert result["actual_ridge_trials"] == 2
+    assert result["actual_validation_candidates"] == 6
+    assert result["final"]["observations"] == 30
