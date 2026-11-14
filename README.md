@@ -47,7 +47,7 @@ StockForecasting/               # Git root: chạy lệnh tại đây
 
 Runtime đầy đủ của upstream yêu cầu Python 3.11 hoặc 3.12 và
 TensorFlow 2.18.1. Đã tạo môi trường riêng `.venv/runtime312` và xác minh
-Python 3.12.16 / TensorFlow 2.18.1 trên CPU: **142 tests đạt từ clone sạch**,
+Python 3.12.16 / TensorFlow 2.18.1 trên CPU: **185 tests đạt từ clone sạch**,
 gồm runtime tests và kiểm tra inference offline.
 V1/v6/v9 cũng đã chạy một bước tối ưu hóa thật và kiểm tra lưu/nạp artifact;
 đây chưa phải huấn luyện hay tái lập benchmark thị trường của LSTM upstream.
@@ -334,9 +334,9 @@ python -m quant_forecast_lab.cli --help
 việc chạy bộ này. Bộ runtime local đã đạt; scaler JSON đã được đối chiếu với
 bản pickle trong đúng runtime gốc. Việc này chưa tái lập training của upstream.
 Workflow ở Git root kiểm tra phần offline trên Python 3.12; hosted GitHub Actions
-đã đạt trên nhánh `fix/forecasting-validation`, commit `ddc26d0`, tại
-[run 43164635037](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/43164635037):
-lint/compile, test nhẹ và demo synthetic đều thành công trên Linux. Bộ TensorFlow
+đã đạt trên nhánh `fix/forecasting-validation`, commit `336d9c3`, tại
+[run 43536926997](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/43536926997):
+lint/compile, test nhẹ và demo synthetic gồm policy mới đều thành công trên Linux. Bộ TensorFlow
 đầy đủ được xác minh riêng trên Windows như trên; reference fixtures được cấp
 riêng thay vì đưa vào Git.
 
