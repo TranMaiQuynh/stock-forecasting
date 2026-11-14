@@ -198,6 +198,55 @@ Lệnh PowerShell đầy đủ nằm trong [README](../README.md), các công c�
 [provision_reference.py](../scripts/provision_reference.py) và
 [replay_checkout.py](../scripts/replay_checkout.py).
 
+## 9. Baseline được phép thắng và model được phép cập nhật
+
+Trước đây validation luôn phải chọn một Ridge. Nay `--include-baselines`
+cho phép chọn zero return hoặc trung bình lợi suất training nếu sai số thấp
+hơn. Với sai số bằng nhau trong tolerance 1e-12, ưu tiên zero, trung bình rồi
+Ridge theo thứ tự cấu hình. Baseline thắng là một kết quả hợp lệ; quy tắc này
+không bảo đảm dự báo tương lai sẽ tốt hơn.
+
+Regularization hạn chế độ lớn hệ số. Nếu dùng `per_sample`, lưới giá trị là
+lambda và mỗi lần fit đặt alpha = số training targets * lambda. Ví dụ 1.000
+mẫu và lambda 0,1 cho alpha 100; 2.000 mẫu cho alpha 200. Mức phạt tương đối
+vì thế nhất quán hơn khi lịch sử tăng. Mean/scale và hệ số được fit lại cùng
+nhau, từ đúng những target đã quan sát.
+
+`frozen` giữ model từ training ban đầu. `monthly` áp dụng cùng lịch cập nhật
+trong validation để chọn cấu hình, sau đó refit từ lịch sử đã biết khi bắt đầu
+đoạn test. Những lần tiếp theo xảy ra khi tháng của origin đã quan sát thay
+đổi. Chương trình không cần biết ngày phiên tương lai để quyết định refit.
+Hyperparameter giữ nguyên trong đoạn test, còn hệ số/scaler có thể cập nhật.
+
+`training_window=756` giới hạn 756 training targets hợp lệ gần nhất. Các
+lookback và baseline dùng cùng target train/evaluation để so sánh công bằng.
+Các lag vẫn có thể cần lịch sử trước target đầu tiên làm input; đó là thông
+tin quá khứ hợp lệ, không phải nhãn tương lai.
+
+Khi refit, dùng nhãn của một dự báo trước đã quan sát là hợp lệ. Dùng nhãn của
+target đang dự báo là leakage. `fit_history.json` ghi cutoff/target của từng
+lần fit; `predictions.csv` trỏ đến checkpoint tương ứng. Nạp checkpoint cuối
+để kiểm tra mọi origin quá khứ sẽ sai phương pháp, nên kiểm tra reload dùng
+đúng checkpoint của từng origin. Lệnh `predict` cũng từ chối origin sớm hơn
+cutoff lựa chọn hoặc cutoff của model đã xuất.
+
+V2 so sánh bốn chính sách trên development trước 2023. Phương pháp đã chịu
+ảnh hưởng từ việc nghiên cứu kết quả cũ, nên chưa có bằng chứng xác nhận độc
+lập. Khoảng bootstrap dùng cùng các block ngày cho actual, model và baseline
+để giữ sự ghép cặp và một phần phụ thuộc thời gian; nó không sửa được mọi
+regime shift hoặc việc thử nhiều cấu hình. Mọi kết quả đều là exploratory.
+
+Một lần xác nhận tương lai cần khóa phương pháp rồi lưu dự báo trước khi biết
+actual. Một scheduled task chưa chạy, hoặc một nhãn chưa xuất hiện, không thể
+được ghi là đã xác nhận. Các lệnh tái lập và protocol có trong [README](../README.md).
+
+Trong kết quả thực tế, AAPL tốt nhất với frozen/expanding, còn MSFT tốt nhất
+với monthly/756. Hai policy được chọn giảm RMSE so với zero return lần lượt
+1,044% và 2,754% trong development, nhưng khoảng bootstrap của cả hai chứa 0.
+Một cột dương trên hình vì vậy chưa đủ để kết luận có lợi thế ổn định. AAPL
+còn kém nhẹ V1 development. Xem cả các policy thua trong
+[báo cáo đầy đủ](../benchmarks/results/2026-11-14-adaptive-development.json).
+
 ## Bài tập của người học
 
 Tính `r1, r2, r3, r4` cho chuỗi ở mục 1; viết input/target của
