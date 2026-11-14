@@ -392,7 +392,7 @@ def run_offline_experiment(
         residual_report = {
             "mean_error": float(residuals.mean()),
             "n_obs": len(residuals),
-            "interpretation": "Final test reporting only; no retuning. No independence guarantee.",
+            "interpretation": "Scored holdout diagnostic; parent experiment defines development/final scope. No child retuning or independence guarantee.",
         }
         if len(residuals) >= 20 and np.ptp(residuals) > 0:
             lag = min(10, len(residuals) // 5)
@@ -466,6 +466,8 @@ def run_offline_experiment(
             "analysis/acf_pacf_values.csv",
             "model_summary.txt",
             "trials.csv",
+            "selection.json",
+            "fit_history.json",
             "predictions.csv",
             "metrics.json",
             "artifacts/model.json",
