@@ -20,11 +20,12 @@ work and is excluded from edits/commits. Baseline verification: **142 passed,
 
 | Task ID | Priority | Component | Issue | Action | Verification | Status | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| V01 | P0 | Research protocol | Previously inspected holdout cannot confirm new changes | Register bounded development-only v2, exclude 2023 onward; reserve future confirmation | Protocol JSON and fixed trial budget; no acquisition | IN_PROGRESS | pending |
-| V02 | P1 | Selection | Ridge must win even when baselines are better; penalties narrowly scaled | Add baseline-eligible validation and alpha=n*lambda through existing runner | Hand-calculated baselines, normalized penalties, tie/failure and causal-fit regressions | TODO | pending |
-| V03 | P1 | Model updates | Fixed model can age; refits need explicit information boundaries | Implement frozen/monthly and expanding/rolling fit scopes with every numerical checkpoint retained | Future mutation, observed-origin refit schedule, fit/selection cutoff and reload tests | TODO | pending |
-| V04 | P1 | Development evaluation | New method needs fair baseline comparisons and uncertainty | Reuse walk-forward orchestration with development-only mode; paired block intervals; bounded market replay | All folds/policies, independent metric recomputation and source/data integrity | TODO | pending |
-| V05 | P2 | Handoff | New contracts need an understandable, reproducible entry point | CLI, saved prediction compatibility, learner explanation and measured report | Full regression suite, offline smoke, one-file commits and hosted CI | TODO | pending |
+| V01 | P0 | Research protocol | Previously inspected holdout cannot confirm new changes | Register bounded development-only v2, exclude 2023 onward; reserve future confirmation | Protocol committed before execution; exactly 704 candidates; no acquisition | DONE | `b88cdb2`, `57afaf2` |
+| V02 | P1 | Selection | Ridge must win even when baselines are better; penalties narrowly scaled | Add baseline-eligible validation and alpha=n*lambda through existing runner | Hand-calculated baselines, normalized penalties, deterministic ties and failure checks pass | DONE | `4143f3f`, `f9cc946` |
+| V03 | P1 | Model updates | Fixed model can age; refits need explicit information boundaries | Implement frozen/monthly and expanding/rolling scopes with every numerical checkpoint retained | Future mutation, observed-origin schedule, origin availability and per-origin reload checks pass | DONE | `f9cc946`, `39447d1`, `4ed7a93` |
+| V04 | P1 | Development evaluation | New method needs fair baseline comparisons and uncertainty | Reuse walk-forward orchestration with development-only mode; paired block intervals; bounded market replay | All 8 comparisons/704 candidates; 73 clean manifests, 3,160 fit states and 8,064 reloads independently checked | DONE | `7597cfb` |
+| V05 | P2 | Handoff | New contracts need an understandable, reproducible entry point | CLI, saved prediction compatibility, learner explanation and measured report | 184 full tests passed before final bookkeeping regression; CLI train/verify/predict smoke; final replay/CI pending | IN_PROGRESS | `fc80481`, `379dcae` |
+| V06 | P1 | Independent confirmation | Future predictions and their labels do not yet exist | Freeze method and prospectively record predictions with origin no earlier than 2026-11-16, then evaluate delayed labels | Protocol registered; no future forecasts or independent confirmation claimed | BLOCKED | future observations required |
 
 KEEP existing preprocessing, diagnostics, numerical artifacts and logging.
 EXTEND the existing research/walk-forward runners; preserve their default v1
@@ -32,6 +33,52 @@ behavior. DEFER new features, neural models, volatility targets and execution
 until these bounded comparisons establish whether the basic changes help.
 Production operation and profitability remain unverified; prospective labels
 after the new protocol cannot be manufactured or replaced with old test data.
+
+Measured run: `log/baseline_guard_development/20261113T235717_433071Z_17991975/`,
+executed from a clean clone at `7597cfbb8f6332801b5ff6baa7237967952d6233`.
+All 5,132 recorded artifacts verify; the original market benchmark still
+verifies all 955 artifacts. Independent audit:
+`log/validation_20261114/market_audit.json`. Every completed child manifest is
+clean at the same code commit. Candidate count is not fit count: monthly
+replays produce multiple parameter/scaler checkpoints for one candidate.
+
+| Asset | Lowest development RMSE policy | V1 development skill | V2 development skill | Exploratory 95% interval vs zero |
+| --- | --- | --- | --- | --- |
+| AAPL | frozen_expanding | +1.125% | +1.044% | [-0.489%, +2.841%] |
+| MSFT | monthly_756 | +1.908% | +2.754% | [-0.841%, +5.989%] |
+
+Both versions use the same 1,008 development targets per asset. MSFT improves
+descriptively; AAPL does not. Baselines win two AAPL monthly/756 folds; they
+are permitted outcomes, not suppressed trials. Selected-policy intervals both
+contain zero and do not account for selecting among policies. One unselected
+MSFT policy has a positive marginal interval; it is not a multiplicity-adjusted
+or independent confirmation. The grid was not expanded after viewing results.
+All results, including negative policies, are published in
+[the measured report](../benchmarks/results/2026-11-14-adaptive-development.json)
+and [figure](../benchmarks/results/2026-11-14-adaptive-development.png).
+
+Reassessment (0-5, evidence-based; whole repository):
+
+| Dimension | Score | Evidence | Remaining weakness / next gate |
+| --- | --- | --- | --- |
+| Architecture | 3 | Existing research, walk-forward, diagnostics and artifact lifecycle reused; causal selection isolated | Legacy neural scripts still couple I/O/training/reporting |
+| Code quality | 3 | Explicit policy validation, compact numerical checkpoints, targeted regressions | No complete static typing gate |
+| Functional correctness | 3 | Default Ridge parity, baseline selection, refit cutoff and checkpoint reload verified | Full external/upstream workflow matrix not replayed |
+| ML correctness | 3 | Chronological selection, common targets, causal refits and future-mutation tests | No independent evidence of generalization improvement |
+| Reproducibility | 3 | Registered grid, clean-clone execution, immutable snapshots and source/config/artifact hashes | No cross-platform hash lock; raw snapshots/reference fixtures are local |
+| Testing/reliability | 3 | 184 full tests at initial integration; audit covers every refit and scored origin | Final 185-test replay and new hosted CI remain in V05 until verified |
+| E2E pipeline | 3 | CSV to diagnostics, candidate selection, refits, evaluation, report and saved inference | Prospective collection and delayed-label evaluation not implemented |
+| Deployment | 1 | Validated offline batch CLI | No scheduler, service SLO, monitoring, rollback or execution contract |
+| Documentation/DX | 3 | Learner explanations, commands, all-policy measured evidence | Exact replay needs authorized local data/artifacts |
+| Practical/portfolio value | 2 | Auditable, falsifiable research and honest mixed results | No confirmed forecasting advantage, profitability or user validation |
+
+Technical verdict: useful, reproducible research/batch software. ML Engineering
+verdict: credible temporal-isolation and experiment-lifecycle work, with bounded
+claims. Practical value is research/learning; market utility remains unproven.
+Production readiness: **not ready**. Continue the narrow scope; do not promote
+the selected policies. Next gate is a prospective collection design and data
+availability, followed by actual delayed-label evidence; broader features,
+neural models and execution require separate hypotheses and acceptance gates.
 
 ## Previous execution (2026-11-12)
 
