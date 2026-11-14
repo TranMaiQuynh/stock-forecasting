@@ -32,6 +32,7 @@ def test_simple_baseline_can_win_with_deterministic_ties(tmp_path, return_value,
     assert result["model_record"]["intercept"] == pytest.approx(return_value, abs=1e-14)
     assert len(pd.read_csv(tmp_path / "trials.csv")) == 4
     assert read(tmp_path / "selection.json")["selection_cutoff"] == str(close.index[89])
+    assert read(tmp_path / "selection.json")["tie_tolerance"] == 1e-12
 
 
 def test_zero_can_displace_a_training_mean_that_fails_validation(tmp_path):
@@ -97,6 +98,7 @@ def test_future_changes_cannot_change_selection_or_earlier_refits(tmp_path):
     frame.loc[115:, "Close"] *= 2
     other = select_return_model(validate_close_frame(frame), targets, 60, 95, config, tmp_path / "b")
     assert (tmp_path / "a/selection.json").read_bytes() == (tmp_path / "b/selection.json").read_bytes()
+    assert read(tmp_path / "a/selection.json")["tie_tolerance"] == 0.0
     np.testing.assert_allclose(original["predicted"][56:112], other["predicted"][56:112])
     for relative in {original["model_paths"][t] for t in range(60, 116)}:
         assert (tmp_path / "a" / relative).read_bytes() == (tmp_path / "b" / relative).read_bytes()
