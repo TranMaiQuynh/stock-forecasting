@@ -1,0 +1,405 @@
+{
+  "code_commit": "7597cfbb8f6332801b5ff6baa7237967952d6233",
+  "comparisons": [
+    {
+      "always_up_directional_accuracy": 0.5416666666666666,
+      "asset": "AAPL",
+      "baseline_selected_folds": 0,
+      "child_run": "AAPL/frozen_expanding/walk_forward_return/20261113T235718_088541Z_1784c808",
+      "directional_accuracy": 0.5396825396825397,
+      "folds": 8,
+      "mae": 0.015126211971555361,
+      "observations": 1008,
+      "policy": "frozen_expanding",
+      "positive_skill_folds": 4,
+      "rmse": 0.021367310380201794,
+      "rmse_skill_vs_training_mean": 0.00956007276072246,
+      "rmse_skill_vs_zero": 0.010435951405396104,
+      "validation_candidates": 88
+    },
+    {
+      "always_up_directional_accuracy": 0.5416666666666666,
+      "asset": "AAPL",
+      "baseline_selected_folds": 0,
+      "child_run": "AAPL/frozen_756/walk_forward_return/20261113T235749_265929Z_46229b82",
+      "directional_accuracy": 0.5386904761904762,
+      "folds": 8,
+      "mae": 0.015232308289399182,
+      "observations": 1008,
+      "policy": "frozen_756",
+      "positive_skill_folds": 4,
+      "rmse": 0.021704065434721045,
+      "rmse_skill_vs_training_mean": -0.005966463974646841,
+      "rmse_skill_vs_zero": -0.005159867123244455,
+      "validation_candidates": 88
+    },
+    {
+      "always_up_directional_accuracy": 0.5416666666666666,
+      "asset": "AAPL",
+      "baseline_selected_folds": 0,
+      "child_run": "AAPL/monthly_expanding/walk_forward_return/20261113T235814_569044Z_e28c9833",
+      "directional_accuracy": 0.5436507936507936,
+      "folds": 8,
+      "mae": 0.015185444109830765,
+      "observations": 1008,
+      "policy": "monthly_expanding",
+      "positive_skill_folds": 4,
+      "rmse": 0.021397490121756044,
+      "rmse_skill_vs_training_mean": 0.008147764208161545,
+      "rmse_skill_vs_zero": 0.009038265561620684,
+      "validation_candidates": 88
+    },
+    {
+      "always_up_directional_accuracy": 0.5416666666666666,
+      "asset": "AAPL",
+      "baseline_selected_folds": 2,
+      "child_run": "AAPL/monthly_756/walk_forward_return/20261113T235901_044616Z_68e581f3",
+      "directional_accuracy": 0.4742063492063492,
+      "folds": 8,
+      "mae": 0.015310004897404198,
+      "observations": 1008,
+      "policy": "monthly_756",
+      "positive_skill_folds": 2,
+      "rmse": 0.02180456551445709,
+      "rmse_skill_vs_training_mean": -0.010256215619818931,
+      "rmse_skill_vs_zero": -0.009814232320271232,
+      "validation_candidates": 88
+    },
+    {
+      "always_up_directional_accuracy": 0.5496031746031746,
+      "asset": "MSFT",
+      "baseline_selected_folds": 0,
+      "child_run": "MSFT/frozen_expanding/walk_forward_return/20261113T235951_259897Z_93fa7142",
+      "directional_accuracy": 0.5406746031746031,
+      "folds": 8,
+      "mae": 0.013357793283242858,
+      "observations": 1008,
+      "policy": "frozen_expanding",
+      "positive_skill_folds": 7,
+      "rmse": 0.01917501745684892,
+      "rmse_skill_vs_training_mean": 0.017838149071172316,
+      "rmse_skill_vs_zero": 0.019094218248473682,
+      "validation_candidates": 88
+    },
+    {
+      "always_up_directional_accuracy": 0.5496031746031746,
+      "asset": "MSFT",
+      "baseline_selected_folds": 0,
+      "child_run": "MSFT/frozen_756/walk_forward_return/20261114T000026_253044Z_dadf2609",
+      "directional_accuracy": 0.5416666666666666,
+      "folds": 8,
+      "mae": 0.013278802641939825,
+      "observations": 1008,
+      "policy": "frozen_756",
+      "positive_skill_folds": 7,
+      "rmse": 0.019032989399555854,
+      "rmse_skill_vs_training_mean": 0.02511374625804652,
+      "rmse_skill_vs_zero": 0.026359721024845073,
+      "validation_candidates": 88
+    },
+    {
+      "always_up_directional_accuracy": 0.5496031746031746,
+      "asset": "MSFT",
+      "baseline_selected_folds": 0,
+      "child_run": "MSFT/monthly_expanding/walk_forward_return/20261114T000101_209251Z_d1f2b729",
+      "directional_accuracy": 0.5416666666666666,
+      "folds": 8,
+      "mae": 0.0133722462192619,
+      "observations": 1008,
+      "policy": "monthly_expanding",
+      "positive_skill_folds": 7,
+      "rmse": 0.019117490088471207,
+      "rmse_skill_vs_training_mean": 0.020888134970894923,
+      "rmse_skill_vs_zero": 0.02203705407001255,
+      "validation_candidates": 88
+    },
+    {
+      "always_up_directional_accuracy": 0.5496031746031746,
+      "asset": "MSFT",
+      "baseline_selected_folds": 0,
+      "child_run": "MSFT/monthly_756/walk_forward_return/20261114T000152_205181Z_72f597ce",
+      "directional_accuracy": 0.5367063492063492,
+      "folds": 8,
+      "mae": 0.013372588797981361,
+      "observations": 1008,
+      "policy": "monthly_756",
+      "positive_skill_folds": 7,
+      "rmse": 0.019009990006460545,
+      "rmse_skill_vs_training_mean": 0.026711227377396507,
+      "rmse_skill_vs_zero": 0.027536264290828116,
+      "validation_candidates": 88
+    }
+  ],
+  "confirmation": {
+    "prospective_origin_not_before": "2026-11-16",
+    "rule": "Freeze the selected method before collecting prospective predictions; only labels observed after recorded predictions can confirm it",
+    "status": "pending_future_evaluation"
+  },
+  "development_before": "2023-01-01",
+  "evaluation_scope": "exploratory_development_only",
+  "limits": [
+    "Known 2023-2025 final holdout excluded",
+    "Exploratory intervals not adjusted for policy selection",
+    "Retrospective adjusted closes; point-in-time validity unverified",
+    "Two preselected surviving firms",
+    "No execution contract, PnL, promotion or production-readiness claim"
+  ],
+  "protocol_id": "baseline-guard-development-v2",
+  "protocol_sha256": "7f91d6d73fe321745541cb872c911d7717e0c05d73c8cedc83a651b70ea7044b",
+  "report_date": "2026-11-14",
+  "root_manifest_sha256": "25a726cfa4967e5d0caa8e181446c06bee70abcb97152dc052dee6bdd63d010b",
+  "selected_policies": {
+    "AAPL": {
+      "confirmation_status": "pending_future_evaluation",
+      "development_rmse": 0.021367310380201794,
+      "policy": "frozen_expanding"
+    },
+    "MSFT": {
+      "confirmation_status": "pending_future_evaluation",
+      "development_rmse": 0.019009990006460545,
+      "policy": "monthly_756"
+    }
+  },
+  "source_run": "log/baseline_guard_development/20261113T235717_433071Z_17991975",
+  "uncertainty": {
+    "AAPL": {
+      "frozen_756": {
+        "versus_training_mean": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.01124431280796385,
+          "interval_upper": 0.00022972641743232913,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": -0.005966463974646841,
+          "seed": 42
+        },
+        "versus_zero": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.010834405566694504,
+          "interval_upper": 0.0017329279567036818,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": -0.005159867123244677,
+          "seed": 42
+        }
+      },
+      "frozen_expanding": {
+        "versus_training_mean": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.0060443326044680445,
+          "interval_upper": 0.0271750448483944,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.009560072760722349,
+          "seed": 42
+        },
+        "versus_zero": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.004893394868222094,
+          "interval_upper": 0.02841309132917908,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.010435951405395993,
+          "seed": 42
+        }
+      },
+      "monthly_756": {
+        "versus_training_mean": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.02099288745729484,
+          "interval_upper": 0.0004920212136118756,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": -0.010256215619818931,
+          "seed": 42
+        },
+        "versus_zero": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.019803637972914706,
+          "interval_upper": 0.0016209463395737813,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": -0.009814232320271454,
+          "seed": 42
+        }
+      },
+      "monthly_expanding": {
+        "versus_training_mean": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.011030122966204607,
+          "interval_upper": 0.02976261596939586,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.008147764208161545,
+          "seed": 42
+        },
+        "versus_zero": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.009596756997496025,
+          "interval_upper": 0.030592607695852172,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.009038265561620795,
+          "seed": 42
+        }
+      }
+    },
+    "MSFT": {
+      "frozen_756": {
+        "versus_training_mean": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.0031183846619613135,
+          "interval_upper": 0.0516417949360959,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.02511374625804652,
+          "seed": 42
+        },
+        "versus_zero": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.0015472312602412862,
+          "interval_upper": 0.0524185976705077,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.026359721024845073,
+          "seed": 42
+        }
+      },
+      "frozen_expanding": {
+        "versus_training_mean": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": 8.148195726456173e-05,
+          "interval_upper": 0.0343398182798111,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.017838149071172205,
+          "seed": 42
+        },
+        "versus_zero": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": 0.0012538303765940904,
+          "interval_upper": 0.03528006559228226,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.019094218248473793,
+          "seed": 42
+        }
+      },
+      "monthly_756": {
+        "versus_training_mean": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.009987368544480879,
+          "interval_upper": 0.05939397286783118,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.026711227377396507,
+          "seed": 42
+        },
+        "versus_zero": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.008407234691582563,
+          "interval_upper": 0.05988859404177915,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.027536264290828227,
+          "seed": 42
+        }
+      },
+      "monthly_expanding": {
+        "versus_training_mean": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.0021227378155138574,
+          "interval_upper": 0.04007659692138161,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.020888134970894923,
+          "seed": 42
+        },
+        "versus_zero": {
+          "block_length": 20,
+          "coverage": 0.95,
+          "interpretation": "exploratory marginal interval; dependence approximation; no selection or multiplicity correction",
+          "interval_lower": -0.0004212272216770923,
+          "interval_upper": 0.04077820946802874,
+          "method": "paired circular moving-block bootstrap",
+          "observations": 1008,
+          "replicates": 2000,
+          "rmse_skill": 0.022037054070012663,
+          "seed": 42
+        }
+      }
+    }
+  },
+  "verification": {
+    "code_commit": "7597cfbb8f6332801b5ff6baa7237967952d6233",
+    "common_v1_v2_development_targets_verified": true,
+    "completed_clean_manifests": 73,
+    "confirmation": "pending_future_evaluation",
+    "fit_states_checked": 3160,
+    "metrics_recomputed": true,
+    "original_benchmark_verification": {
+      "code_commit": "3d40d9108437f42b9115014535e89cfaf543e44d",
+      "manifest_sha256": "b82d3739b7e72cd416c216c4f70722f63636b1b4b2fd22456ee821d2bd30bc3f",
+      "model_name": "market_protocol",
+      "run_id": "20261112T033204_275096Z_904ed2d6",
+      "status": "completed",
+      "verified_artifacts": 955
+    },
+    "root_verification": {
+      "code_commit": "7597cfbb8f6332801b5ff6baa7237967952d6233",
+      "manifest_sha256": "25a726cfa4967e5d0caa8e181446c06bee70abcb97152dc052dee6bdd63d010b",
+      "model_name": "baseline_guard_development",
+      "run_id": "20261113T235717_433071Z_17991975",
+      "status": "completed",
+      "verified_artifacts": 5132
+    },
+    "status": "verified",
+    "test_origin_reloads": 8064,
+    "validation_candidates": 704
+  }
+}
