@@ -167,9 +167,69 @@ Số liệu, provenance và giới hạn: [measured report](benchmarks/results/2
 
 ![Development và final holdout](benchmarks/results/2026-11-12-reference-ridge.png)
 
+## Baseline và cập nhật model: protocol v2
+
+Phần mở rộng ngày 14/11/2026 dùng runner hiện có để so sánh 4 chính sách:
+model cố định hoặc cập nhật hàng tháng, kết hợp toàn bộ lịch sử hoặc 756
+training targets gần nhất. Protocol nằm tại
+[baseline_guard_v2.json](benchmarks/protocols/baseline_guard_v2.json).
+
+`--include-baselines` cho phép zero return và trung bình training thắng trên
+validation. `--penalty-mode per_sample` hiểu các giá trị `--ridge-alphas` là
+lambda và tính `alpha = n_train * lambda` tại mỗi lần fit. Các lựa chọn này
+không bảo đảm model sẽ thắng baseline trên dữ liệu mới.
+
+Ví dụ kiểm tra bằng dữ liệu tổng hợp:
+
+~~~powershell
+.\.venv\runtime312\Scripts\python.exe -m quant_forecast_lab.cli experiment --synthetic --asset DEMO --include-baselines --penalty-mode per_sample --ridge-alphas 0.001 0.1 10 --refit-policy monthly --training-window 100
+~~~
+
+Vòng development thị trường tái dùng run gốc đã xác minh, loại toàn bộ dữ liệu
+từ năm 2023 trước khi fit/chọn model, không tải lại dữ liệu:
+
+~~~powershell
+.\.venv\runtime312\Scripts\python.exe benchmarks\run_adaptive_research.py --source-run log\market_protocol\20261112T033204_275096Z_904ed2d6
+~~~
+
+Đây là 704 lượt chọn ứng viên qua 8 fold/mã, không phải 704 neural training
+jobs. Mỗi lần cập nhật có checkpoint riêng, danh sách training targets và
+cutoff. Mỗi dự báo được đối chiếu với đúng checkpoint đã tạo ra nó. Lịch cập
+nhật dựa vào tháng của origin đã quan sát; hyperparameter đã chọn giữ nguyên
+trong đoạn đánh giá của fold.
+
+Kết quả ở `log/baseline_guard_development/<run_id>/` gồm toàn bộ policy,
+baseline, lựa chọn, biểu đồ và khoảng bootstrap theo block cho RMSE skill.
+Các khoảng này mô tả độ bất định của phép so sánh sai số; không phải khoảng
+giá dự báo và không điều chỉnh cho việc chọn policy tốt nhất.
+
+Final holdout 2023–2025 vẫn là kết quả lịch sử đã xem. Protocol v2 dành lần xác
+nhận riêng cho dự báo được ghi nhận trước actual, với origin không sớm hơn
+16/11/2026. Chưa có kết quả xác nhận tương lai hoặc model được promote.
+
+Kết quả development đã đo ngày 14/11/2026, trên cùng 1.008 targets/mã với V1:
+
+| Mã | Policy V2 có RMSE thấp nhất | Skill V1 development | Skill V2 development | Khoảng bootstrap 95% của V2 |
+| --- | --- | --- | --- | --- |
+| AAPL | frozen_expanding | +1,125% | +1,044% | [-0,489%; +2,841%] |
+| MSFT | monthly_756 | +1,908% | +2,754% | [-0,841%; +5,989%] |
+
+Các skill đều so với zero return, không phải lợi nhuận. MSFT cải thiện mô tả
+trong development; AAPL không cải thiện so với V1. Cả hai khoảng của policy
+được chọn chứa zero và chưa điều chỉnh cho quá trình chọn policy. Không có
+kết luận cải thiện ngoài mẫu độc lập hoặc quyết định promote.
+
+Đã kiểm tra độc lập 73 manifest sạch, 704 ứng viên, 3.160 trạng thái fit,
+8.064 lần nạp checkpoint và toàn bộ 5.132 artifact của run. Toàn bộ 8 policy
+results và các giới hạn nằm trong
+[measured V2 report](benchmarks/results/2026-11-14-adaptive-development.json).
+
+![Development V2 và độ bất định](benchmarks/results/2026-11-14-adaptive-development.png)
+
 ## Log và artifact
 
-Mỗi run tạo `log/ridge_log_return/<run_id>/`, được Git ignore:
+Mỗi run tạo `log/ridge_log_return/<run_id>/`, hoặc `log/return_forecast/<run_id>/`
+khi baseline được phép thắng; các thư mục này được Git ignore:
 
 - `manifest.json`, `config.json`, `environment.json`: trạng thái, cấu hình,
   phiên bản, source hash và artifact checksums.
@@ -179,6 +239,8 @@ Mỗi run tạo `log/ridge_log_return/<run_id>/`, được Git ignore:
   `stationary_test.txt`, CSV/JSON và hình ACF/PACF.
 - `model_summary.txt`, `trials.csv`, `artifacts/model.json`:
   cấu hình được chọn, các trial đã chạy và tham số model/scaler.
+- `selection.json`, `fit_history.json`, `artifacts/trials/`, `artifacts/selected/`:
+  phạm vi chọn cấu hình, mọi lần fit và checkpoint số học tương ứng.
 - `predictions.csv`, `metrics.json`, `residual_diagnostics.json`:
   kết quả ngoài mẫu và chẩn đoán.
 - `future_forecast.json`, `forecast_values.txt`, `figures/forecast.png`,
@@ -202,7 +264,9 @@ Runner chưa có calibrated uncertainty, trading execution hoặc deployment.
 `predict` là tác vụ offline: kiểm tra run nguồn, đọc CSV và dự báo một quan sát
 kế tiếp, không fit lại scaler/model. CSV giữ hợp đồng `Date,Close` với ít nhất
 60 quan sát; còn phải đủ lookback của model. `--asset` phải khớp model và thời
-điểm cuối CSV không được sớm hơn thời điểm chọn cấu hình bằng validation.
+điểm cuối CSV không được sớm hơn thời điểm chọn cấu hình hoặc lần fit cuối
+của model đã xuất. `predict` nạp checkpoint cố định; muốn cập nhật hệ số phải
+thực hiện một training/refit run theo policy đã ghi.
 Người cung cấp CSV phải giữ cùng định nghĩa giá và tần suất với training.
 
 Ví dụ đầy đủ bằng dữ liệu tổng hợp, chạy từ Git root trên PowerShell:
