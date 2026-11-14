@@ -21,7 +21,7 @@ jobs:
           python -m pip install numpy pandas scikit-learn matplotlib 'statsmodels>=0.14,<0.16' pytest ruff
       - name: Lint and compile
         run: |
-          ruff check quant_forecast_lab tests tests_runtime
+          ruff check quant_forecast_lab tests tests_runtime scripts benchmarks/run_reference_research.py benchmarks/run_adaptive_research.py
           python -m compileall -q quant_forecast_lab benchmarks *.py
       - name: Run lightweight and offline integration tests
         run: python -m pytest -q tests
@@ -30,6 +30,7 @@ jobs:
           python -m quant_forecast_lab.cli benchmark --help
           python -m quant_forecast_lab.cli arena --help
           python -m quant_forecast_lab.cli experiment --synthetic --asset SYNTHETIC
+          python -m quant_forecast_lab.cli experiment --synthetic --asset SYNTHETIC_POLICY --include-baselines --penalty-mode per_sample --ridge-alphas 0.1 --refit-policy monthly --training-window 100 --lookbacks 1 3 --max-analysis-lag 5
       - name: Preserve experiment evidence
         if: always()
         uses: actions/upload-artifact@v4
