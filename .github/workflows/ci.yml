@@ -31,6 +31,7 @@ jobs:
           python -m quant_forecast_lab.cli arena --help
           python -m quant_forecast_lab.cli experiment --synthetic --asset SYNTHETIC
           python -m quant_forecast_lab.cli experiment --synthetic --asset SYNTHETIC_POLICY --include-baselines --penalty-mode per_sample --ridge-alphas 0.1 --refit-policy monthly --training-window 100 --lookbacks 1 3 --max-analysis-lag 5
+          python scripts/demo_shadow.py
       - name: Preserve experiment evidence
         if: always()
         uses: actions/upload-artifact@v4
