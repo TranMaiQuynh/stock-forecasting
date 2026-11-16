@@ -32,7 +32,7 @@ def run_saved_forecast(run_directory, input_csv, *, asset, output_root="log"):
     }
     with tracked_run(output_root, "saved_ridge_forecast", settings) as (run, logger):
         verified = verify_run(source)
-        if verified["model_name"] not in {"ridge_log_return", "return_forecast"}:
+        if verified["model_name"] not in {"ridge_log_return", "return_forecast", "shadow_model"}:
             raise ValueError("Expected a completed numerical return research run.")
         manifest = json.loads((source / "manifest.json").read_text(encoding="utf-8"))
         required = {"artifacts/model.json", "data_manifest.json", "split_manifest.json"}
