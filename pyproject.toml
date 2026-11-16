@@ -23,6 +23,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+neural = [
+  "absl-py",
+  "h5py",
+  "tensorflow==2.18.1",
+]
 research = [
   "statsmodels>=0.14,<0.16",
 ]
