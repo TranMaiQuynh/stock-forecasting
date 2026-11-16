@@ -108,3 +108,14 @@ def test_unknown_database_version_is_not_migrated_silently(tmp_path):
         connection.execute("PRAGMA user_version=99")
     with pytest.raises(ValueError, match="schema"):
         ForecastLedger(path)
+
+
+def test_budget_is_enforced_transactionally_and_retries_still_succeed(tmp_path):
+    ledger = ForecastLedger(tmp_path / "ledger.sqlite")
+    row = prediction()
+    row["protocol"]["max_forecasts"] = 1
+    original, _ = ledger.record(row)
+    assert ledger.record(row) == (original, False)
+    with pytest.raises(ValueError, match="budget reached"):
+        ledger.record({**row, "origin_session": "2026-11-15"})
+    assert len(ledger.forecasts(mode="replay")) == 1
