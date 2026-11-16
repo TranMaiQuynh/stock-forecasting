@@ -121,6 +121,15 @@ class ForecastLedger:
                 < _instant(record["target_open_at"])
             ):
                 raise ValueError("Live forecast cannot be backdated past its actual recording deadline.")
+            budget = protocol.get("max_forecasts")
+            if budget is not None:
+                if isinstance(budget, bool) or not isinstance(budget, int) or budget < 1:
+                    raise ValueError("Invalid frozen collection budget.")
+                count = connection.execute(
+                    "SELECT COUNT(*) FROM forecasts WHERE mode=? AND protocol_id=? AND asset=?", identity[:3]
+                ).fetchone()[0]
+                if count >= budget:
+                    raise ValueError("Collection budget reached; extending it requires a new protocol.")
             connection.execute("INSERT INTO forecasts VALUES (?, ?, ?, ?, ?, ?, ?)",
                                (record["forecast_id"], *identity, _encode(record), semantic_hash))
         return record, True
