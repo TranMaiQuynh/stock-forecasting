@@ -1,2 +1,2 @@
 ﻿# Project dependencies are declared once in pyproject.toml.
--e .[research,dev]
+-e .[research,neural,dev]
