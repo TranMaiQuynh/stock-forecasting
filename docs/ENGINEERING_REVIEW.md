@@ -13,24 +13,110 @@ Review date: 2026-11-11. Scope: imported Quant Forecast Lab source inside
 The owner authorized the prospective forecasting work discussed after v2. Starting
 HEAD: `b7dff83`, branch `fix/forecasting-validation`; tracked index/worktree clean.
 The untracked Vietnamese development note remains owner work. Git identity is
-`TranMaiQuynh <tranmaiquynhds@gmail.com>`. No expansion of the v2 search or reuse
-of the inspected 2023-2025 final holdout is authorized by this implementation.
+`TranMaiQuynh <tranmaiquynhds@gmail.com>`. No expansion of the v2 search or
+re-scoring/tuning on the inspected 2023-2025 final holdout is performed. A later
+candidate may train on labels already observed by its actual preparation time;
+those labels are no longer an untouched evaluation set.
 
 | Task ID | Priority | Component | Issue | Action | Verification | Status | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| P01 | P0 | Forecast contract | Observation dates do not identify availability or the next exchange session | Validate exchange sessions, data receipts, forecast deadlines and explicit replay/live modes | Holiday/DST/early-close, stale/future/missing data and timestamp rejection tests | IN_PROGRESS | pending |
-| P02 | P0 | Prospective record | Unique run directories do not prevent duplicate or overwritten business forecasts | Add transactional SQLite forecast/label ledger; preserve original prediction and first label vintage | Retry/conflict/concurrency, delayed-label and paired-metric checks | TODO | pending |
-| P03 | P1 | Batch integration | Saved inference has no prospective record/score workflow | Reuse verified saved inference with contract checks and CLI record/score/report commands | Offline end-to-end replay, input/model tampering, no inference-time fitting | TODO | pending |
-| P04 | P1 | Retraining/stop decision | Retraining without a frozen rule cannot establish improvement | Explicit bounded refit from a pinned selected policy; keep new observations separate from development results | Numerical reload, causal fit cutoff and no new parameter search | TODO | pending |
-| P05 | P2 | Handoff | Operational behavior and limits need a reproducible demonstration | Offline synthetic demo, learner explanation and independent assessment | Full regression, lint, exact one-file commits and artifact verification | TODO | pending |
+| P01 | P0 | Forecast contract | Observation dates do not identify availability or the next exchange session | Validate exchange sessions, data receipts, forecast deadlines and explicit replay/live modes | 15 session-contract tests: holidays, DST, early closes, gaps, stale/future data and incompatible label basis | DONE | `ea83559`, `df0820f` |
+| P02 | P0 | Prospective record | Unique run directories do not prevent duplicate or overwritten business forecasts | Transactional append-only SQLite forecast/label ledger; first prediction/label retained; fixed budget | 12 ledger tests: retries, concurrency, conflicts, actual live clock, matched errors and budget | DONE | `ebb6793`, `95d9ba5`, `9e1234e`, `9d99c76`, `a99e42d` |
+| P03 | P1 | Batch integration | Saved inference has no prospective record/score workflow | CLI capture/prepare/init/record/score/report; frozen checkpoint and protocol | 16 integration tests including CLI, offline/no-fit inference, stop decisions, gaps, source protection and failed fits | DONE | `a77169a`, `02ef785`, `73ec6c2`, `82f43eb`, `7b32718` |
+| P04 | P1 | Retraining/stop decision | Retraining without a frozen rule cannot establish improvement | One refit of pinned recipe; separate fixed-checkpoint operational pilot from v2 method confirmation | sklearn coefficient parity; 2 real market candidates fit through 2026-11-13; no new search, old-final metrics or live forecasts | DONE | `a79ddca`; local preparation receipt below |
+| P05 | P2 | Handoff | Operational behavior and limits need a reproducible demonstration | Offline demo, learner explanations and independent review | 228 tests, lint/compile; clean source export demo verifies 111 artifacts; one-file commits | DONE | `c8d7424`, `fb82a2a`, `217735e`, `19ae73d`, `892589b`; this review |
+| P06 | P1 | Live operations | No scheduled daily pilot or prospective labels yet | Configure acquisition/record/score schedule with heartbeat, recovery and an explicit operational acceptance window | Proposed 20 consecutive valid sessions, timely receipts, no duplicate predictions, failure drills; not statistical confirmation | TODO | not deployed |
 
 Decision: KEEP the research/selection/artifact components; EXTEND with a narrow
 local batch lane. SQLite provides atomic uniqueness without a new service;
 exchange-calendars 4.13.2 is already declared and installed. Calendar checks do
 not prove vendor point-in-time correctness. Live receipts use the machine clock;
 historical replay is explicitly labelled and cannot count as prospective proof.
+Installed exchange-calendars 4.13.2 resolves XNAS to the XNYS calendar; this is
+a provider calendar alias, not independent Nasdaq venue/calendar verification.
 No external timestamp authority, data-license clearance, scheduler deployment,
 model promotion, trading, profitability or future observations are claimed.
+
+### Verified evidence and scope
+
+Baseline: all 185 pre-existing tests passed before implementation. Final local
+regression: **228 passed, 237 warnings**, no skipped/excluded tests, Windows
+Python 3.12.16 with the existing runtime. The extra 43 tests cover the new lane.
+`log/validation_20261116/full_tests.txt` retains the output. Warnings are from
+pandas/Keras and exchange-calendars' pandas-3.1 timezone access; none are hidden.
+Ruff passed for maintained source/tests/runtime tests/scripts and both research
+benchmark runners; compileall and `git diff --check` passed.
+
+Synthetic demo `log/shadow_demo/20261116T043803_369892Z_90951d29/` ran one fixed
+refit, two forecasts and two delayed labels; retry created no duplicate. All 10
+child runs and 111 total artifacts verify. Its negative descriptive skill causes
+`stop_candidate_retain_baseline`, as required. Two synthetic observations have
+no statistical/market interpretation. A clean tracked-source ZIP export of
+`217735e` repeated the same complete demo with the same numerical result:
+`log/validation_20261116/clean_export_demo/shadow_demo/20261116T060759_364221Z_b40b83de/`.
+This export reused the supported installed environment; it is **not** a new
+dependency installation or a full independent-environment replay. CI was extended
+to run this demo; no new hosted CI run is claimed without a push.
+
+Yahoo acquisition initially failed inside the sandbox and succeeded on the
+authorized retry outside it; failed manifests were retained. Each new adjusted
+close snapshot contains 2,985 sessions from 2015 through 2026-11-13. Both pass
+continuous-session validation. Original v2 root still verifies 5,132 artifacts.
+The source recipe is taken from the **last**, not best, development fold of each
+already-selected policy. No candidate search or market performance evaluation
+was conducted on the new snapshots.
+
+| Asset | Pinned lookback/lambda | Eligible new fit labels | Fit cutoff | Candidate run |
+| --- | --- | --- | --- | --- |
+| AAPL | 10 / 10, alpha=29,740 | 2,974, expanding | 2026-11-13 | `log/shadow_model/20261116T060756_908555Z_1212f86b` |
+| MSFT | 10 / 10, alpha=7,560 | 756, rolling history | 2026-11-13 | `log/shadow_model/20261116T060758_522041Z_653cc419` |
+
+Full hashes/source/snapshot/protocol references and replayable preparation script
+are local under `log/validation_20261116/market_preparation.json` and
+`prepare_market_candidates.py`. These data/artifacts are ignored, not redistributed.
+The current untracked owner note and documentation edits are disclosed by the
+run's dirty-worktree flag; preparation is not claimed as a clean benchmark.
+Protocols under `log/shadow/protocols/` pin each candidate, earliest origin
+2026-11-16, 252-forecast upper budget and 1% descriptive RMSE threshold. These
+values are pilot assumptions, **not** a power analysis or evidence of usefulness.
+The proposed 20-session operational review is separate and need not wait for
+252 labels; neither count establishes predictive skill.
+
+Both real candidates passed saved-model reload and artifact verification. The
+pre-start recording attempt was correctly rejected because snapshot origin
+2026-11-13 precedes the allowed origin; **zero live forecasts/labels exist** and
+no market ledger was created. With the default buffer, the first eligible
+2026-11-16-origin receipt is after 21:20 UTC (04:20 Vietnam, 2026-11-17), provided
+the actual source close is available, and before the next session opens.
+
+**Important boundary:** both serving checkpoints are frozen for this pilot.
+The MSFT recipe inherits the 756-label fit scope, but monthly retraining and
+reselection are not implemented in the live pilot. This is not an independent
+confirmation of the complete v2 research policy. V2's old results are unchanged.
+
+### Independent reassessment (0-5)
+
+| Dimension | Score | Evidence | Remaining weakness / next gate |
+| --- | --- | --- | --- |
+| Architecture | 3 | Existing research/inference retained; session, ledger, refit and CLI responsibilities separated | Legacy neural paths remain coupled; keep operational scope small |
+| Code quality | 3 | Explicit mode, frozen protocol, transactional uniqueness and validation | No complete static typing gate; review broader legacy interfaces |
+| Functional correctness | 3 | Existing 185 tests plus 43 regressions pass; actual market refits reload | No long-running scheduler/failure-recovery evidence |
+| ML correctness | 3 | Pinned recipes, causal labels, baseline comparison and stop logic | No new predictive advantage; separate complete v2 confirmation required |
+| Reproducibility | 3 | Source export demo, snapshot/model hashes and fixed seeds | Market data is local, vendor revisions and cross-platform lock remain unresolved |
+| Testing/reliability | 3 | 228 tests, concurrency/clock/solver failures and no-fit inference checks | New hosted Linux run and real multi-session failures not yet measured |
+| E2E pipeline | 3 | Snapshot to optional refit, recorded prediction, delayed label and report works in replay | Live collection, scheduling and registry/promotion remain pending |
+| Deployment | 1 | Usable local batch CLI and CI configuration | No deployed scheduler, heartbeat, measured SLO or rollback drill |
+| Documentation/DX | 3 | One-command public-data-free demo; Vietnamese timeline and live commands | Fresh Linux installation and long-term onboarding still need verification |
+| Practical/portfolio value | 2 | Auditable new engineering contribution and measured negative demo behavior | No user pilot, confirmed market benefit or profitability |
+
+Verdicts: technically defensible research and tested local batch software;
+credible ML Engineering work with bounded claims; practical market/user value
+unproven; production **not ready**. Continue the narrow scope. Next gates are
+scheduled live acquisition/recording with heartbeat and incident drills, a
+20-session operational review, and a separately registered statistically justified
+confirmation design if predictive quality remains worth investigating. Stop weak
+candidates rather than extending budgets based on observed outcomes. Do not add
+trading, neural architectures or infrastructure to conceal absent utility.
 
 ## Previous execution (2026-11-14)
 
