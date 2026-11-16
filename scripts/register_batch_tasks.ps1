@@ -37,7 +37,7 @@ $batchSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -Star
 $batchCreated = @()
 try {
     foreach ($batchTask in $batchTasks) {
-        $batchArguments = '-NoProfile -NonInteractive -WindowStyle Hidden -File "{0}" -Python "{1}" -StateDatabase "{2}" -Operation {3} -WorkingDirectory "{4}"' -f $batchWrapper, $batchPython, $batchState, $batchTask.Operation, $batchWorkingDirectory
+        $batchArguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}" -Python "{1}" -StateDatabase "{2}" -Operation {3} -WorkingDirectory "{4}"' -f $batchWrapper, $batchPython, $batchState, $batchTask.Operation, $batchWorkingDirectory
         $batchAction = New-ScheduledTaskAction -Execute $batchShell -Argument $batchArguments -WorkingDirectory $batchWorkingDirectory
         $batchTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes $batchTask.Minutes)
         Register-ScheduledTask -TaskName $batchTask.Name -Action $batchAction -Trigger $batchTrigger -Settings $batchSettings -Principal $batchPrincipal -Description 'Local research pilot; no training, model promotion, external messaging or trading.' | Out-Null
