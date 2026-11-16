@@ -22,6 +22,20 @@ Các lệnh LSTM kế thừa được lưu trong [Upstream guide](docs/UPSTREAM_
 Giải thích từ dữ liệu, thuật ngữ đến quyết định và bài tập:
 [Learning guide](docs/LEARNING_GUIDE.md).
 
+Phần vận hành mới (16/11/2026) đã có batch acquire → score → record,
+job/checkpoint bền vững, chống dự báo trùng, health checker độc lập,
+activation/rollback và backup/restore SQLite. Pilot AAPL/MSFT đã đăng ký trên
+Windows; cả hai task chạy thử trả exit 0 trước phiên bắt đầu, chưa có dự báo
+prospective hoặc bằng chứng sinh lợi. Task cần máy bật và tài khoản đăng nhập.
+Hướng dẫn từ luồng tổng quan, thuật ngữ đến lệnh vận hành và xử lý sự cố:
+[Operations guide](docs/OPERATIONS.md).
+
+Môi trường batch riêng cài từ `uv.lock` không có TensorFlow, đã đạt **239 tests
+offline**, cộng **20 runtime tests** đạt riêng trong môi trường TensorFlow,
+và demo lỗi/phục hồi bằng dữ liệu giả. TensorFlow thuộc extra `neural`;
+`requirements.txt` vẫn cài runtime đầy đủ. CI đã bổ sung lockfile và demo mới;
+phiên bản workflow vừa sửa chưa chạy trên hosted runner.
+
 ## Cấu trúc dự án
 
 ~~~text
@@ -74,12 +88,16 @@ không xóa thư mục này khi còn dùng môi trường dựa trên nó.
 Nếu chỉ cần phần offline, cài stack nhẹ trong môi trường riêng:
 
 ~~~powershell
-python -m pip install numpy pandas scikit-learn matplotlib "statsmodels>=0.14,<0.16" pytest ruff
+python -m pip install ".[research,dev]"
 ~~~
 
 Các lệnh `python -m quant_forecast_lab.cli ...` bên dưới chạy trực tiếp từ
 `D:\Github\StockForecasting`. Chúng không cần cài package editable hoặc tải
 dữ liệu mạng khi chạy từ source.
+
+Cách cài nhẹ bằng pip trên không khóa toàn bộ dependency. Để tái lập bản batch
+đã kiểm chứng, dùng `uv sync --locked` trong môi trường riêng theo Operations
+guide; không sync đè môi trường đang chạy pilot.
 
 ## Dữ liệu và protocol
 
