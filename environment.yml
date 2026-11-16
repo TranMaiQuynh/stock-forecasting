@@ -7,4 +7,4 @@ dependencies:
   - pip
   - pip:
       # Keep package versions in pyproject.toml; run conda env create from Git root.
-      - '-e .[research,dev]'
+      - '-e .[research,neural,dev]'
