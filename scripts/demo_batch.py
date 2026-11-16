@@ -33,8 +33,16 @@ def main(argv=None):
     from quant_forecast_lab.forecast_ledger import ForecastLedger
     from quant_forecast_lab.health import check_health, write_health
     from quant_forecast_lab.market_data import MarketDataUnavailable
-    from quant_forecast_lab.operations import OperationsStore
+    from quant_forecast_lab.operations import OperationsStore, fingerprint
     from quant_forecast_lab.recovery import copy_database, restore_database, rollback
+
+    if args.installed_package:
+        source_root = Path(__file__).resolve().parents[1] / "quant_forecast_lab"
+        installed_root = Path(quant_forecast_lab.__file__).parent
+        source_hash = fingerprint({p.name: p.read_text(encoding="utf-8") for p in sorted(source_root.glob("*.py"))})
+        installed_hash = fingerprint({p.name: p.read_text(encoding="utf-8") for p in sorted(installed_root.glob("*.py"))})
+        if source_hash != installed_hash:
+            raise RuntimeError("Installed wheel differs from this source release; rebuild before running the demo.")
 
     settings = {"mode": "replay", "data_kind": "synthetic", "simulated_incidents": True, "market_evidence": False}
     with tracked_run(args.output_root, "batch_demo", settings) as (run, logger):
@@ -109,6 +117,8 @@ def main(argv=None):
         if ForecastLedger(recovered).forecasts(mode="replay") != rows:
             raise RuntimeError("Restored forecast/label contents differ")
         health = check_health(config, as_of=final_time)
+        if health["status"] != "collection_complete":
+            raise RuntimeError(f"Recovered synthetic collection is not healthy: {health['alerts']}")
         write_health(run, health)
         checks = []
         for path in sorted(run.rglob("manifest.json")):
