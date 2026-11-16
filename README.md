@@ -290,6 +290,28 @@ Run mới giữ snapshot input, model JSON đã kiểm tra, nguồn model, forec
 summary, checksum và log lỗi. `verify-run` kiểm tra trạng thái hoàn tất, danh
 sách file và hash; nó không chứng minh nguồn đáng tin hay chất lượng model.
 
+## Pilot ghi dự báo và chấm điểm trễ
+
+Đã bổ sung CLI `shadow` cho vòng batch: snapshot có receipt → tùy chọn refit
+một recipe cố định → khóa checkpoint/protocol → ghi dự báo SQLite → nhận nhãn
+sau phiên đích → báo sai số và điều kiện dừng. Có kiểm tra lịch sàn, retry không
+trùng, xung đột dữ liệu/model và tách `live` khỏi `replay`.
+
+Demo hoàn chỉnh không mạng, không cần dữ liệu/reference artifact riêng:
+
+~~~powershell
+.\.venv\runtime312\Scripts\python.exe scripts/demo_shadow.py
+python -m quant_forecast_lab.cli shadow --help
+~~~
+
+Trên Linux có thể dùng `python scripts/demo_shadow.py` sau khi cài stack offline
+ở mục kiểm tra chất lượng, thêm `exchange-calendars==4.13.2`.
+
+Demo là **synthetic replay**, không chứng minh hiệu quả thị trường. Pilot dùng
+checkpoint cố định; chưa xác nhận phương pháp monthly v2, chưa chạy theo lịch
+production, không tự promote hay giao dịch. Giải thích train lại, timeline,
+lệnh live và điều kiện dừng trong [Learning guide](docs/LEARNING_GUIDE.md#10-train-lại-dự-báo-trước-kết-quả-và-biết-khi-nào-dừng).
+
 ## Tái lập từ checkout sạch
 
 `tests_runtime` cần đúng model reference, không có sẵn trong Git. Manifest tại
