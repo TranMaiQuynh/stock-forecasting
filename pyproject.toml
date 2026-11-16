@@ -40,6 +40,10 @@ quant-forecast = "quant_forecast_lab.cli:main"
 [tool.setuptools.packages.find]
 include = ["quant_forecast_lab*"]
 
+[tool.uv]
+# Rebuild non-editable local wheels when code changes, not just metadata.
+cache-keys = [{ file = "pyproject.toml" }, { file = "README.md" }, { file = "LICENSE" }, { file = "quant_forecast_lab/**/*.py" }]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
