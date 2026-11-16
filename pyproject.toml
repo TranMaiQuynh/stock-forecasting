@@ -11,14 +11,11 @@ requires-python = ">=3.11,<3.13"
 license = {text = "Apache-2.0"}
 authors = [{name = "Jordi Corbilla"}]
 dependencies = [
-  "absl-py",
   "exchange-calendars==4.13.2",
-  "h5py",
   "matplotlib",
   "numpy",
   "pandas",
   "scikit-learn",
-  "tensorflow==2.18.1",
   "yfinance==1.0",
 ]
 
