@@ -247,6 +247,138 @@ Một cột dương trên hình vì vậy chưa đủ để kết luận có l�
 còn kém nhẹ V1 development. Xem cả các policy thua trong
 [báo cáo đầy đủ](../benchmarks/results/2026-11-14-adaptive-development.json).
 
+## 10. Train lại, dự báo trước kết quả và biết khi nào dừng
+
+Phần này là **pilot vận hành với một checkpoint cố định**. Nó bổ sung vào pipeline
+nghiên cứu, không thay kết quả v2 hoặc xác nhận chính sách monthly/756 của MSFT.
+Chính sách v2 còn có quy tắc chọn ứng viên và cập nhật theo tháng; pilot này giữ
+một recipe đã chọn rồi cố định checkpoint để kiểm tra vòng ghi/chấm điểm.
+
+Ba việc khác nhau:
+
+| Việc | Đầu vào → đầu ra | Điều không được suy ra |
+| --- | --- | --- |
+| Software tests | Tình huống có đáp án → phát hiện lỗi code/thời gian | Test đạt không chứng minh lợi thế dự báo |
+| `shadow prepare` | Recipe đã chọn + snapshot có receipt → một lần fit mới | Có model mới không có nghĩa model tốt hơn |
+| `shadow record/score` | Dự báo đã ghi + nhãn xuất hiện sau → sai số ghép cặp với baseline | Sai số thấp hơn trên ít ngày không chứng minh sinh lợi |
+
+**Recipe** là loại estimator, thứ tự feature, lookback và hệ số phạt đã chọn.
+`candidate.prepare_candidate` giữ recipe từ research run đã kiểm tra checksum,
+giữ cửa sổ training và fit đúng một lần bằng các nhãn trong snapshot mới.
+Ridge dùng lời giải số với `solver="svd"`, không có epoch để tăng thêm. Nếu dùng
+`per_sample`, alpha mới bằng số mẫu training mới nhân lambda cũ. `zero` không
+học hệ số; `training_mean` cập nhật trung bình của đúng các nhãn được phép dùng.
+Không chạy lại grid search, không tự promote và không tự refit mỗi lần predict.
+
+**Receipt** ghi khi máy cục bộ đã nhận/lưu snapshot. Ngày của dòng dữ liệu chỉ là
+nhãn phiên; không phải giờ nhà cung cấp công bố. Lịch sàn chọn phiên đích kế tiếp,
+bao gồm ngày nghỉ, đổi giờ mùa hè và phiên đóng sớm. Khoảng chờ mặc định 20 phút
+là giả định bảo thủ có cấu hình, không phải SLA được đo của Yahoo.
+
+Ví dụ tại New York tháng 11/2026, với buffer mặc định:
+
+~~~text
+16/11 21:00 UTC   Phiên nguồn đóng cửa
+16/11 21:20 UTC   Hết buffer; snapshot nhận từ đây mới đủ điều kiện
+16/11 21:30 UTC   Ghi dự báo từ giá đã quan sát
+17/11 14:30 UTC   Phiên đích mở; không được ghi dự báo mới cho phiên này nữa
+17/11 21:00 UTC   Phiên đích đóng cửa
+17/11 21:20 UTC   Có thể chấm điểm nếu đã nhận nhãn hợp lệ
+~~~
+
+Lợi suất thực tế là `log(target_close) - log(origin_close_đã_ghi)`. Snapshot nhãn
+phải chứa cả hai phiên và có giá origin bằng giá đã lưu; thay đổi cơ sở giá điều
+chỉnh sẽ báo lỗi. Việc xử lý đầy đủ corporate actions và các vintage của vendor
+vẫn chưa được triển khai. Cờ vendor point-in-time vẫn là `False`.
+
+**Idempotency** nghĩa là chạy lại cùng tác vụ không tạo thêm bản ghi hay đổi kết
+quả ban đầu. `forecast_ledger.ForecastLedger` dùng khóa duy nhất theo
+`mode/protocol/asset/origin`, transaction và kiểm tra xung đột. Hai writer cùng
+ghi sẽ có một bản ghi thắng. Recipe/protocol thay đổi hoặc snapshot khác cho cùng
+khóa sẽ bị từ chối; nhãn đã chấm cũng giữ vintage đầu tiên. SQLite trigger ngăn
+UPDATE/DELETE thông thường, nhưng người có quyền quản trị vẫn có thể thay file
+DB; đây không phải bằng chứng thời gian từ một bên thứ ba.
+
+**Chạy demo hoàn chỉnh, không mạng, không dữ liệu riêng:**
+
+~~~powershell
+.\.venv\runtime312\Scripts\python.exe scripts/demo_shadow.py
+~~~
+
+Demo sinh giá tổng hợp trên lịch XNYS, train research nhỏ, refit một lần, ghi hai
+dự báo, chấm hai nhãn, kiểm tra retry và xác minh artifact. Xem `receipt.json`,
+`report.json`, `verification.json` trong thư mục `demo_run` được in ra. Mọi kết
+quả đều mang `mode=replay`, `data_kind=synthetic`, `market_evidence=false`.
+Không coi các con số này là benchmark thị trường.
+
+**Luồng dùng dữ liệu thật** sau khi chọn rõ research run nguồn và quyền dữ liệu:
+
+1. Dùng `acquire` hiện có để tạo `market_snapshot`; hoặc `shadow capture` với
+   CSV riêng và asset đúng. Capture ghi giờ nhận hiện tại, không chứng minh
+   file lịch sử đã có sẵn ở quá khứ. Giữ định nghĩa close tương thích với nguồn.
+2. Trong cửa sổ sau close/buffer và trước next-open, chuẩn bị ứng viên nếu cần:
+
+~~~powershell
+$selected = 'path/to/verified/selected/research/run'
+$snapshot = 'path/to/verified/market_snapshot/run'
+$shadowPython = '.\.venv\runtime312\Scripts\python.exe'
+$candidate = (& $shadowPython -m quant_forecast_lab.cli shadow prepare --run-dir $selected --snapshot-run $snapshot --mode live | ConvertFrom-Json).model_run
+& $shadowPython -m quant_forecast_lab.cli shadow init --run-dir $candidate --protocol-id aapl-fixed-pilot-v1 --output log/shadow/aapl-v1.json --earliest-origin 2026-11-16 --max-forecasts 252 --minimum-skill 0.01
+& $shadowPython -m quant_forecast_lab.cli shadow record --run-dir $candidate --snapshot-run $snapshot --protocol log/shadow/aapl-v1.json --mode live
+~~~
+
+3. Mỗi origin mới dùng snapshot mới với cùng candidate/protocol. Khi nhãn xuất
+   hiện, lấy snapshot mới và chạy:
+
+~~~powershell
+& $shadowPython -m quant_forecast_lab.cli shadow score --snapshot-run path/to/later/snapshot --asset AAPL --mode live --protocol-id aapl-fixed-pilot-v1
+& $shadowPython -m quant_forecast_lab.cli shadow report --mode live --protocol-id aapl-fixed-pilot-v1
+~~~
+
+Các lệnh trên là hướng dẫn; không có lần chạy live nào được giả định đã diễn ra.
+`live` lấy đồng hồ thật và cấm `--as-of`; `replay` bắt buộc truyền `--as-of` có múi
+giờ và không được tính là bằng chứng prospective. Model/dữ liệu synthetic bị cấm
+trong live. Mỗi asset cần protocol riêng. Lịch XNYS/XNAS là lựa chọn rõ trong
+protocol, không suy đoán sàn niêm yết từ ticker.
+
+**Điều kiện dừng:** protocol khóa checkpoint, ngân sách và ngưỡng trước khi thu
+thập; không được sửa file rồi tiếp tục cùng ID. Ví dụ mặc định 252 dự báo và giảm
+RMSE 1% là cấu hình pilot minh họa, **chưa có tính toán statistical power** (khả
+năng phát hiện một mức cải thiện thật); không phải tiêu chuẩn chứng nhận mô hình.
+
+- Chưa hết ngân sách: `collecting_within_fixed_budget`.
+- Hết ngân sách, thiếu nhãn: `budget_closed_waiting_for_labels`.
+- Thiếu origin giữa ngày bắt đầu và origin cuối: không được xác nhận đầy đủ.
+- Không đạt ngưỡng: `stop_candidate_retain_baseline`.
+- Đạt ngưỡng: `independent_review_required_no_promotion`; chưa tuyên bố hiệu quả.
+
+Report giữ tất cả dự báo đã ghi, ghép cùng target cho model và zero baseline,
+báo pending/overdue và missing origins qua origin cuối. Nó chưa phát hiện các
+phiên bỏ lỡ sau bản ghi cuối khi không còn job nào chạy; cần scheduler heartbeat
+ở mốc vận hành tiếp theo. Report là trạng thái DB hiện tại, không dựng lại
+trạng thái mà người dùng đã biết tại một thời điểm quá khứ.
+
+Nếu dừng ứng viên: giữ kết quả âm, không mở tiếp grid từ kết quả đã xem. Một giả
+thuyết mới cần lý do, budget và protocol mới; cân nhắc đổi target khi nhu cầu người
+dùng và bằng chứng cho thấy hướng cũ không đủ giá trị. Chưa có scheduler được
+triển khai, registry/promotion, rollback drill hoặc bằng chứng sinh lợi.
+
+Đã chuẩn bị thật ngày 16/11/2026: snapshot AAPL/MSFT đến 13/11, mỗi mã 2.985
+phiên; fit một lần cho AAPL bằng 2.974 nhãn và MSFT bằng 756 nhãn. Cả hai lấy
+recipe từ fold development cuối của policy đã chọn, cùng lookback 10/lambda 10.
+Checkpoint phục vụ sau đó được cố định. Xem đường dẫn model/protocol và receipt
+trong [engineering review](ENGINEERING_REVIEW.md#current-execution-2026-11-16).
+Không có metric thị trường mới và chưa có dự báo live; ghi trước ngày bắt đầu
+đã bị từ chối đúng. Việc fit trên các nhãn lịch sử đã biết không biến chúng
+thành tập đánh giá độc lập mới.
+
+Tham chiếu cơ chế: [exchange-calendars](https://github.com/gerrymanoim/exchange_calendars),
+[SQLite transactions](https://www.sqlite.org/lang_transaction.html).
+
+**Bài tập của người học:** sửa `minimum_practical_rmse_skill` trong protocol demo
+đã ghi rồi thử ghi lại cùng origin. Kết quả đúng là lỗi xung đột, dự báo và số
+bản ghi cũ giữ nguyên. Chỉ làm trong output demo tổng hợp, không sửa research run.
+
 ## Bài tập của người học
 
 Tính `r1, r2, r3, r4` cho chuỗi ở mục 1; viết input/target của
