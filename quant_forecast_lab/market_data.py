@@ -11,6 +11,10 @@ from .experiment import sha256_file, tracked_run, write_json
 from .research import validate_close_frame
 
 
+class MarketDataUnavailable(ValueError):
+    """No observations received; a bounded retry may recover vendor availability."""
+
+
 def acquire_market_snapshot(asset, start, end, *, output_root="log", downloader=None):
     """Save a daily adjusted-close snapshot and vendor provenance without repair.
 
@@ -46,7 +50,9 @@ def acquire_market_snapshot(asset, start, end, *, output_root="log", downloader=
             downloader = yf.download
             client_version = version("yfinance")
         raw = downloader(**options)
-        if not isinstance(raw, pd.DataFrame) or raw.empty or isinstance(raw.columns, pd.MultiIndex):
+        if isinstance(raw, pd.DataFrame) and raw.empty:
+            raise MarketDataUnavailable("Provider returned no observations; no data is fabricated.")
+        if not isinstance(raw, pd.DataFrame) or isinstance(raw.columns, pd.MultiIndex):
             raise ValueError("Provider must return a nonempty single-asset frame.")
         if not isinstance(raw.index, pd.DatetimeIndex):
             raise ValueError("Provider must return a DatetimeIndex of session dates.")
