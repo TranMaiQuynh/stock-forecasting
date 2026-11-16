@@ -1,6 +1,7 @@
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+from datetime import UTC, datetime
 
 import pytest
 
@@ -119,3 +120,25 @@ def test_budget_is_enforced_transactionally_and_retries_still_succeed(tmp_path):
     with pytest.raises(ValueError, match="budget reached"):
         ledger.record({**row, "origin_session": "2026-11-15"})
     assert len(ledger.forecasts(mode="replay")) == 1
+
+
+def test_live_record_and_label_are_bounded_by_the_actual_clock(tmp_path, monkeypatch):
+    import quant_forecast_lab.forecast_ledger as module
+
+    class Clock(datetime):
+        instant = datetime(2026, 11, 16, 21, 35, tzinfo=UTC)
+
+        @classmethod
+        def now(cls, tz=None):
+            return cls.instant.astimezone(tz)
+
+    monkeypatch.setattr(module, "datetime", Clock)
+    ledger = ForecastLedger(tmp_path / "ledger.sqlite")
+    original, _ = ledger.record({**prediction(), "mode": "live"})
+    with pytest.raises(ValueError, match="live label"):
+        score(ledger, original)
+    Clock.instant = datetime(2026, 11, 17, 21, 35, tzinfo=UTC)
+    labelled, created = score(ledger, original)
+    assert created and labelled["recorded_at"].startswith("2026-11-17")
+    assert ledger.report(mode="live")["groups"][0]["scored"] == 1
+    assert ledger.report(mode="replay")["groups"] == []
