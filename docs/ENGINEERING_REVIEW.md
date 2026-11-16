@@ -8,7 +8,32 @@ as historical evidence. See the layout-cleanup record at the end of this file.
 Review date: 2026-11-11. Scope: imported Quant Forecast Lab source inside
 `D:/Github/StockForecasting`; parent Git branch `main`, HEAD `2557a56`.
 
-## Current execution (2026-11-16)
+## Current execution: scheduled batch operations (2026-11-16)
+
+The owner authorized the next roadmap after `19fda3d`. Branch remains
+`fix/forecasting-validation`; tracked tree/index were clean, owner identity
+unchanged, and the untracked Vietnamese note is excluded. Existing research
+results/protocols and candidate checkpoints remain frozen. No new search,
+long training, trading or public deployment is part of this increment.
+
+| Task ID | Priority | Component | Issue | Action | Verification | Status | Commit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| O01 | P1 | Job state | Individual CLI commands have no durable workflow state or lease | Transactional per-origin jobs, stage checkpoints and bounded ownership | Concurrency, crash/reclaim and checkpoint preservation tests | IN_PROGRESS | pending |
+| O02 | P1 | Daily batch | Acquisition/scoring/recording need manual coordination | Calendar-aware runner; transient-only retries; independent per-asset failures | Offline replay, retry/nonretry, stale data, no-fit and crash-resume checks | TODO | pending |
+| O03 | P1 | Monitoring | An absent job cannot report its own failure | Independent due-session/heartbeat/label checker and local human-readable report | Never-started jobs, gaps after last forecast, stale lease and recovery tests | TODO | pending |
+| O04 | P1 | Release/recovery | Operational config changes and DB recovery are manual | Pinned deployment activation/rollback and consistent SQLite backup to a new destination | Invalid activation preserves active version; rollback/backup recovery drill | TODO | pending |
+| O05 | P2 | Runtime/deployment | Default dependencies include the neural runtime; no scheduling entry point | Lightweight installation, explicit neural extra, scheduler definitions and deployment runbook | Clean supported-runtime install/demo; scheduler checks; container status reported honestly | TODO | pending |
+| O06 | P1 | Validation/pilot | Operation over future market sessions cannot be simulated as evidence | Full regression, synthetic incident demo and real preflight; prepare the actual pilot | No fabricated live forecasts; separate future 20-session acceptance | TODO | pending |
+
+KEEP the existing ledger, contracts, acquisition and inference APIs. Add a small
+SQLite operations store beside the forecast ledger; do not introduce a workflow
+service. Individual snapshot/model/forecast runs keep their current inventories.
+Mutable heartbeat/job state belongs outside those immutable run directories.
+Scheduler polling uses exchange-session due times instead of fixed UTC close
+assumptions. Docker client exists but its daemon is unavailable even outside the
+sandbox; a container configuration cannot be reported as runtime-verified here.
+
+## Previous execution: shadow pilot (2026-11-16)
 
 The owner authorized the prospective forecasting work discussed after v2. Starting
 HEAD: `b7dff83`, branch `fix/forecasting-validation`; tracked index/worktree clean.
