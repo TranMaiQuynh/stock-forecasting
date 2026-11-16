@@ -18,12 +18,13 @@ long training, trading or public deployment is part of this increment.
 
 | Task ID | Priority | Component | Issue | Action | Verification | Status | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| O01 | P1 | Job state | Individual CLI commands have no durable workflow state or lease | Transactional per-origin jobs, stage checkpoints and bounded ownership | Concurrency, crash/reclaim and checkpoint preservation tests | IN_PROGRESS | pending |
-| O02 | P1 | Daily batch | Acquisition/scoring/recording need manual coordination | Calendar-aware runner; transient-only retries; independent per-asset failures | Offline replay, retry/nonretry, stale data, no-fit and crash-resume checks | TODO | pending |
-| O03 | P1 | Monitoring | An absent job cannot report its own failure | Independent due-session/heartbeat/label checker and local human-readable report | Never-started jobs, gaps after last forecast, stale lease and recovery tests | TODO | pending |
-| O04 | P1 | Release/recovery | Operational config changes and DB recovery are manual | Pinned deployment activation/rollback and consistent SQLite backup to a new destination | Invalid activation preserves active version; rollback/backup recovery drill | TODO | pending |
-| O05 | P2 | Runtime/deployment | Default dependencies include the neural runtime; no scheduling entry point | Lightweight installation, explicit neural extra, scheduler definitions and deployment runbook | Clean supported-runtime install/demo; scheduler checks; container status reported honestly | TODO | pending |
-| O06 | P1 | Validation/pilot | Operation over future market sessions cannot be simulated as evidence | Full regression, synthetic incident demo and real preflight; prepare the actual pilot | No fabricated live forecasts; separate future 20-session acceptance | TODO | pending |
+| O01 | P1 | Job state | Individual CLI commands have no durable workflow state or lease | Transactional per-origin jobs, stage checkpoints and bounded ownership | Concurrency, crash/reclaim and checkpoint preservation tests | DONE | `3cd1ab5`, `d277e4e` |
+| O02 | P1 | Daily batch | Acquisition/scoring/recording need manual coordination | Calendar-aware runner; transient-only retries; independent per-asset failures | Offline replay, retry/nonretry, stale data, no-fit and crash-resume checks | DONE | `b845fa9`, `14d35e9`, `15fa599`, `4d4f007` |
+| O03 | P1 | Monitoring | An absent job cannot report its own failure | Independent due-session/heartbeat/label checker and local human-readable report | Never-started jobs, gaps, concurrent publishers, stale leases and corrupt DB tests | DONE | `4424dd5`, `c434010`, `fd155d9`, `4aeae31` |
+| O04 | P1 | Release/recovery | Operational config changes and DB recovery are manual | Pinned deployment activation/rollback and consistent SQLite backup to a new destination | Invalid activation preserves active version; rollback/backup recovery drill | DONE | `9b6fa7f`, `92cfafc`, `c9802df`, `6ec4c9b` |
+| O05 | P2 | Runtime/deployment | Default dependencies include neural runtime; no scheduling entry point | Lightweight locked installation, explicit neural extra and Windows scheduler | Installed wheel/source parity, no TF, dependency check, real task exit codes | DONE | `af471bc`, `2d9d779`, `32b7d5f`, `9edacb9`, `6a375d9`, `5bd3c54` |
+| O06 | P1 | Validation/pilot setup | Future observations cannot be simulated as evidence | Regression, synthetic incident demo and real preflight; install local pilot | Retain failed runs; no fabricated live forecasts; honest review and handoff | DONE | `4247deb`, `6c1b569`; this review |
+| O07 | P1 | Prospective acceptance | Future market sessions have not occurred | Observe 20 consecutive eligible sessions; record incident/recovery evidence | Timely unique forecasts, timely labels, valid hashes and no unresolved failures | TODO | future operation |
 
 KEEP the existing ledger, contracts, acquisition and inference APIs. Add a small
 SQLite operations store beside the forecast ledger; do not introduce a workflow
@@ -32,6 +33,105 @@ Mutable heartbeat/job state belongs outside those immutable run directories.
 Scheduler polling uses exchange-session due times instead of fixed UTC close
 assumptions. Docker client exists but its daemon is unavailable even outside the
 sandbox; a container configuration cannot be reported as runtime-verified here.
+
+### Batch implementation evidence and final independent review
+
+The original baseline this increment was **228 passed, 237 warnings**. A full
+intermediate run passed **257 tests, 725 warnings**; a concurrent-publisher test
+was added afterward. The locked non-editable environment `.venv/batch312`
+passed **238 offline tests, 717 warnings**. Existing full TensorFlow environment
+`.venv/runtime312` independently passed **20 runtime tests, 8 warnings** in
+24.21 seconds. No tests were skipped or weakened. Logs are retained in
+`log/validation_20261116/batch_*`.
+
+Independent review reproduced a stale-green defect: corrupting the forecast DB
+made the health command fail while the HTML/JSON retained its old status.
+`health_corruption_before.txt` records the failing regression; `fd155d9` makes
+downstream monitoring failures publish unhealthy output. The expanded focused
+suite passed **25 tests, 488 warnings**. Report publication uses unique temporary
+files and bounded retries for Windows sharing conflicts; JSON and HTML are
+individually atomic, not a transactional pair.
+
+The installed-package regression then caught a second issue: uv's default local
+build cache reused an older wheel when only Python files changed. Cache keys now
+include package sources, metadata and license; the installed demo rejects a
+source/wheel mismatch. The rebuilt separate `.venv/batch312-v2` passes the corrupt
+DB/concurrent report tests, with 55 compatible packages and no TensorFlow. The
+previous runtime is retained. Installed source pin is
+`a4e271a016fee73e3f495576fdecc3c94615dbbaef85bfa1bb0d207fe81923e0`.
+Final installed v2 regression: **239 passed, 717 warnings in 286.30 seconds**;
+`batch_final_installed_tests.txt` is the complete output. Together with the 20
+runtime tests, all **259 current tests** passed across the two environments.
+Ruff, compileall, `uv lock --check` and `uv pip check` passed. Warnings are
+timezone deprecations in pandas/plotting and scalar conversion in legacy Keras;
+no warnings were hidden to make tests pass. An unactivated stale-build config
+and failed test logs are retained as evidence, not used as the active release.
+
+The synthetic incident demo exercises missing jobs, transient retries, failure
+after business commit, resume without duplicates, final-label scoring after the
+forecast budget, operational rollback and DB restore. Its completed receipt has
+2 forecasts/2 labels, `market_evidence=false`, 21 verified completed child runs
+and 207 inventoried artifacts. The injected failed run remains failed and its
+artifact checksums are verified. These are execution checks, not market results.
+
+Windows tasks `StockForecasting-Pilot-Run` (15 minutes) and
+`StockForecasting-Pilot-Health` (5 minutes) were registered under owner account
+`aliza`, Interactive/Limited, using versioned hidden wrappers and a working
+directory outside the source root. Both executed with exit 0, not merely
+registered. Scheduler receipts and stdout/stderr are retained locally. Before
+the first origin, health is `not_due` and both assets have zero forecasts/labels.
+First eligibility is 2026-11-16 21:30 UTC, subject to data arrival and polling.
+
+Final active release is `equity-pilot-v2`, configured in
+`log/operations/live/config-release-v2.json`; both task actions now use
+`.venv/batch312-v2`. The transition paused scheduling, verified no tasks were
+running, activated the pinned definition, changed both actions and resumed them.
+The previous `equity-pilot-v1` definition and `.venv/batch312` remain available;
+this is an operational release change, not a model retrain or ML promotion.
+`scheduler_verification_v2.json` records the final account/actions/exit results.
+The final installed synthetic demo is
+`log/batch_demo/20261116T094904_145022Z_f9e75a65`; its completed top-level
+manifest was independently reverified (207 artifacts).
+
+The operational pilot uses frozen candidates prepared earlier today, not a
+confirmation of the v2 monthly-refit research method. No model search, new
+performance evaluation, holdout tuning, long training, trading or public
+deployment occurred. No Whisper components apply. Branding search found only a
+historical audit reference and incidental encoded image bytes; notebook sources
+contain no branding references. Licenses and attribution remain intact.
+
+Current scores are scoped engineering judgments, not certifications:
+
+| Dimension | Score / 5 | Verified evidence | Remaining weakness and next acceptance |
+| --- | --- | --- | --- |
+| Architecture | 3 | Research, immutable ledger, operations state and watchdog have separate responsibilities | Some internal shadow helpers are reused; expose public contracts only when another consumer needs them |
+| Code quality | 3 | Typed exceptions, validation, bounded retries, small modules and passing Ruff | Interfaces are not comprehensively statically typed; add types around high-risk boundaries incrementally |
+| Functional correctness | 4 | Full regression plus injected partial-commit, concurrency, corruption and recovery cases | Actual daily vendor/host failures remain unobserved; pass O07 |
+| ML correctness | 4 | Temporal isolation, fixed protocols, paired baseline and no-fit inference tests | Predictive edge absent; no promotion without an adequately powered prospective evaluation |
+| Reproducibility | 4 | Locked dependencies, source/wheel pin, artifact inventories and self-contained synthetic demo | Market data can be revised; obtain point-in-time licensed data before stronger claims |
+| Testing/reliability | 4 | Offline, runtime and incident checks; failed runs retained | New hosted Linux workflow has not run; execute it after an authorized push |
+| E2E completeness | 3 | Data → selected checkpoint → scheduled inference → delayed label → monitoring → recovery | Training selection remains a deliberate research operation; no automatic retraining/promotion or full-host recovery |
+| Deployment/operations | 2 | Actual local Windows tasks and isolated installed runtime | Login/host availability required; add external watchdog, continuous host, offsite backup and recovery drill |
+| Documentation/DX | 4 | Vietnamese learning/runbook explanations, architecture and reproducible commands | Clean clone still needs market candidates; follow synthetic demo first |
+| Practical/portfolio value | 3 | Useful prospective forecast audit trail and reliability demonstration | Useful research/engineering tool; unproven investment benefit and no user/deployment adoption evidence |
+
+**Technical verdict:** a defensible research and local batch pilot, materially
+stronger than a training notebook. **ML Engineering verdict:** credible evidence
+of lifecycle, evaluation and reliability engineering; no evidence of alpha.
+**Practical value:** usable for collecting auditable prospective forecasts and
+studying failure/recovery. **Production readiness:** not ready for an unattended
+production service. **Recommendation:** continue with a narrow operational
+pilot; stop adding model complexity until a predeclared experiment justifies it.
+
+Priority roadmap: (P1) pass O07's 20-session window without unresolved delivery
+failures; (P1) exercise coordinated two-DB/artifact recovery on a continuously
+available host with offsite backup and an external outage check; (P1) resolve
+data licensing and point-in-time limitations; (P2) run the revised hosted CI and
+measure resource/retention needs. Freeze prospective analysis and sample-size
+rules before any claim of predictive improvement. The 252-origin budget and 1%
+practical threshold remain unpowered illustrative rules. No production,
+profitability or automatic model-promotion claim is authorized by these results.
+See [OPERATIONS.md](OPERATIONS.md) for operational and learner instructions.
 
 ## Previous execution: shadow pilot (2026-11-16)
 
