@@ -49,6 +49,7 @@ def run_batch_command(args):
     from .shadow import _effective, _now
 
     command, exit_code = args.batch_command, 0
+    health_failure_reported = False
     try:
         if command == "configure":
             receipt = json.loads(Path(args.preparation_receipt).read_text(encoding="utf-8"))
@@ -84,6 +85,7 @@ def run_batch_command(args):
                     failed = {"status": "unhealthy", "mode": args.mode, "checked_as_of": _now(), "assets": [],
                               "alerts": [{"code": "active_configuration_invalid", "error": str(error)}]}
                     write_health(Path(args.state_db).resolve().parent / "health" / args.mode, failed)
+                    health_failure_reported = True
                 raise
             if command == "run":
                 snapshots = {}
@@ -105,5 +107,9 @@ def run_batch_command(args):
                 exit_code = int(result["status"] == "unhealthy")
     except (ValueError, OSError, KeyError, sqlite3.Error) as error:
         result, exit_code = {"status": "failed", "error_type": type(error).__name__, "error": str(error)}, 2
+        if command == "health" and not health_failure_reported:
+            failed = {"status": "unhealthy", "mode": args.mode, "checked_as_of": _now(), "assets": [],
+                      "alerts": [{"code": "health_check_failed", "error": str(error)}]}
+            write_health(Path(args.state_db).resolve().parent / "health" / args.mode, failed)
     print(json.dumps(result, indent=2, allow_nan=False))
     return exit_code
