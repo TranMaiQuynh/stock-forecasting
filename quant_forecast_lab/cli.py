@@ -117,11 +117,20 @@ def _build_parser() -> argparse.ArgumentParser:
     predict.add_argument("--csv", required=True)
     predict.add_argument("--asset", required=True, help="Must match the source model asset.")
     predict.add_argument("--output-root", default="log")
+
+    from .shadow_cli import add_shadow_commands
+
+    add_shadow_commands(subparsers)
     return parser
 
 
 def main(argv=None) -> int:
     args = _build_parser().parse_args(argv)
+
+    if args.command == "shadow":
+        from .shadow_cli import run_shadow_command
+
+        return run_shadow_command(args)
 
     if args.command == "verify-run":
         from .artifacts import verify_run
