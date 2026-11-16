@@ -8,7 +8,31 @@ as historical evidence. See the layout-cleanup record at the end of this file.
 Review date: 2026-11-11. Scope: imported Quant Forecast Lab source inside
 `D:/Github/StockForecasting`; parent Git branch `main`, HEAD `2557a56`.
 
-## Current execution (2026-11-14)
+## Current execution (2026-11-16)
+
+The owner authorized the prospective forecasting work discussed after v2. Starting
+HEAD: `b7dff83`, branch `fix/forecasting-validation`; tracked index/worktree clean.
+The untracked Vietnamese development note remains owner work. Git identity is
+`TranMaiQuynh <tranmaiquynhds@gmail.com>`. No expansion of the v2 search or reuse
+of the inspected 2023-2025 final holdout is authorized by this implementation.
+
+| Task ID | Priority | Component | Issue | Action | Verification | Status | Commit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| P01 | P0 | Forecast contract | Observation dates do not identify availability or the next exchange session | Validate exchange sessions, data receipts, forecast deadlines and explicit replay/live modes | Holiday/DST/early-close, stale/future/missing data and timestamp rejection tests | IN_PROGRESS | pending |
+| P02 | P0 | Prospective record | Unique run directories do not prevent duplicate or overwritten business forecasts | Add transactional SQLite forecast/label ledger; preserve original prediction and first label vintage | Retry/conflict/concurrency, delayed-label and paired-metric checks | TODO | pending |
+| P03 | P1 | Batch integration | Saved inference has no prospective record/score workflow | Reuse verified saved inference with contract checks and CLI record/score/report commands | Offline end-to-end replay, input/model tampering, no inference-time fitting | TODO | pending |
+| P04 | P1 | Retraining/stop decision | Retraining without a frozen rule cannot establish improvement | Explicit bounded refit from a pinned selected policy; keep new observations separate from development results | Numerical reload, causal fit cutoff and no new parameter search | TODO | pending |
+| P05 | P2 | Handoff | Operational behavior and limits need a reproducible demonstration | Offline synthetic demo, learner explanation and independent assessment | Full regression, lint, exact one-file commits and artifact verification | TODO | pending |
+
+Decision: KEEP the research/selection/artifact components; EXTEND with a narrow
+local batch lane. SQLite provides atomic uniqueness without a new service;
+exchange-calendars 4.13.2 is already declared and installed. Calendar checks do
+not prove vendor point-in-time correctness. Live receipts use the machine clock;
+historical replay is explicitly labelled and cannot count as prospective proof.
+No external timestamp authority, data-license clearance, scheduler deployment,
+model promotion, trading, profitability or future observations are claimed.
+
+## Previous execution (2026-11-14)
 
 ### Baseline-eligible adaptive forecasting
 
