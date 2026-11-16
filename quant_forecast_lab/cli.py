@@ -121,11 +121,19 @@ def _build_parser() -> argparse.ArgumentParser:
     from .shadow_cli import add_shadow_commands
 
     add_shadow_commands(subparsers)
+    from .batch_cli import add_batch_commands
+
+    add_batch_commands(subparsers)
     return parser
 
 
 def main(argv=None) -> int:
     args = _build_parser().parse_args(argv)
+
+    if args.command == "batch":
+        from .batch_cli import run_batch_command
+
+        return run_batch_command(args)
 
     if args.command == "shadow":
         from .shadow_cli import run_shadow_command
