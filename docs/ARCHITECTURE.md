@@ -28,6 +28,46 @@ The quant_forecast_lab package contains dependency-light components that can be 
 - reproducibility.py — deterministic seed setup;
 - cli.py — research utilities.
 
+## Prospective batch lane
+
+The research lane produces a verified model and a frozen evaluation protocol.
+Batch inference consumes these artifacts without training or automatic model
+promotion. Daily delivery and prospective measurement have separate acceptance
+criteria from research selection and predictive advantage.
+
+```mermaid
+flowchart LR
+    R[Chronological research and selection] --> M[Verified model and frozen protocol]
+    T[Task Scheduler: run] --> B[Daily batch]
+    M --> B
+    B --> D[Validated market snapshot]
+    B --> O[Operations SQLite: leases and checkpoints]
+    B --> L[Forecast SQLite: predictions and labels]
+    H[Task Scheduler: health] --> C[Independent calendar and delivery checks]
+    C --> O
+    C --> L
+    C --> P[Local JSON and HTML report]
+```
+
+- `batch_config.py` validates pinned code/artifacts and computes due sessions.
+- `operations.py` owns transactional job leases, stage history and active pointers.
+- `daily.py` coordinates acquisition, delayed scoring and immutable recording.
+- `health.py` reads the ledger/state independently; missing jobs need not run to
+  be detected. Unique temporary files and bounded Windows rename retries protect
+  concurrent publishers. HTML/JSON publish individually, not as one transaction;
+  consumers should use JSON and check `checked_as_of`.
+- `recovery.py` validates release switches and single-database backup/restore.
+- `batch_cli.py` exposes these operations; `scripts/` holds the scheduler wrapper
+  and synthetic incident demo. No workflow server, broker or public endpoint.
+
+The two SQLite stores are separate from immutable run directories. Restoring
+both stores and their referenced files requires paused workers and a coordinated
+procedure; the backup API does not make a multi-database atomic snapshot.
+The batch lane reuses some internal shadow helpers; promoting these to explicit
+public interfaces is deferred until another consumer justifies that refactor.
+Read [OPERATIONS.md](OPERATIONS.md) for the installed pilot, failure handling and
+the remaining host, data licensing, monitoring and recovery requirements.
+
 Future refactors can move training, data and model implementations behind these stable interfaces one component at a time.
 
 ## Design rules
