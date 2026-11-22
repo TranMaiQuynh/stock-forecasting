@@ -26,6 +26,7 @@ def main(argv=None):
 
     import quant_forecast_lab
     import quant_forecast_lab.daily as daily
+    from quant_forecast_lab.acceptance import evaluate_acceptance
     from quant_forecast_lab.artifacts import verify_run
     from quant_forecast_lab.batch_config import parse_config
     from quant_forecast_lab.daily import BatchFailure, run_daily
@@ -117,6 +118,10 @@ def main(argv=None):
         if ForecastLedger(recovered).forecasts(mode="replay") != rows:
             raise RuntimeError("Restored forecast/label contents differ")
         health = check_health(config, as_of=final_time)
+        acceptance = evaluate_acceptance(config, rows, as_of=final_time, required_sessions=2)
+        if acceptance["status"] != "not_ready" or acceptance["consecutive_compliant_sessions"] != 1:
+            raise RuntimeError("Injected late delivery was incorrectly accepted after recovery")
+        write_json(run / "acceptance.json", acceptance)
         # Recovery completes the records; it cannot make the injected late
         # delivery timely. Both old and new watchdogs expose late_origins.
         historical_codes = {"late_forecasts", "late_labels"}
@@ -141,7 +146,9 @@ def main(argv=None):
                    "first_origin": first.date().isoformat(), "first_run": str(first_run),
                    "retained_failed_run": str(failed_run), "transient_attempts": len(calls),
                    "forecasts": 2, "scored": 2, "rollback_verified": True, "restore_verified": True,
-                   "health_status": health["status"], "verified_completed_runs": len(checks), "promotion": "disabled"}
+                   "health_status": health["status"], "operational_acceptance": acceptance["status"],
+                   "consecutive_compliant_sessions": acceptance["consecutive_compliant_sessions"],
+                   "verified_completed_runs": len(checks), "promotion": "disabled"}
         write_json(run / "receipt.json", receipt)
         write_json(run / "verification.json", checks)
         logger.info("SYNTHETIC incident drill complete; no prospective or market-effectiveness claim")
