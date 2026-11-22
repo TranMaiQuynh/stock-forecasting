@@ -56,6 +56,10 @@ flowchart LR
   be detected. Unique temporary files and bounded Windows rename retries protect
   concurrent publishers. HTML/JSON publish individually, not as one transaction;
   consumers should use JSON and check `checked_as_of`.
+- `acceptance.py` computes per-origin forecast/label deadlines and a consecutive
+  shared-session operational window without writes. New pending labels are not
+  fabricated; recovered late labels remain violations. CLI revalidates window
+  artifacts and runtime blockers. This is not a predictive-performance gate.
 - `recovery.py` validates release switches and single-database backup/restore.
 - `batch_cli.py` exposes these operations; `scripts/` holds the scheduler wrapper
   and synthetic incident demo. No workflow server, broker or public endpoint.
@@ -63,6 +67,13 @@ flowchart LR
 The two SQLite stores are separate from immutable run directories. Restoring
 both stores and their referenced files requires paused workers and a coordinated
 procedure; the backup API does not make a multi-database atomic snapshot.
+
+`scripts/pilot_recovery.py` captures serving model/input/label-source closure,
+both SQLite snapshots and the active runtime source. It refuses running jobs
+and intervening database commits using persistent read connections. A drill
+restores into new paths and compares logical tables and offline inference.
+Absolute ledger references are retained: full relocated live activation,
+dependency distribution, offsite storage and host failover remain unverified.
 The batch lane reuses some internal shadow helpers; promoting these to explicit
 public interfaces is deferred until another consumer justifies that refactor.
 Read [OPERATIONS.md](OPERATIONS.md) for the installed pilot, failure handling and
