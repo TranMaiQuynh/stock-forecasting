@@ -12,6 +12,7 @@ from contextlib import closing
 from datetime import timedelta
 from pathlib import Path
 
+from .acceptance import forecast_time, label_deadline, label_time
 from .batch_config import expected_slots
 from .experiment import write_json
 from .operations import OperationsStore
@@ -38,7 +39,8 @@ def read_forecasts(path, mode):
 def check_health(config, *, as_of=None):
     effective = _effective(config.mode, as_of)
     instant = utc_timestamp(effective)
-    rows = read_forecasts(config.database, config.mode)
+    rows = [{**r, "label": r["label"] if r["label"] is not None and label_time(r["label"], config.mode) <= instant else None}
+            for r in read_forecasts(config.database, config.mode) if forecast_time(r, config.mode) <= instant]
     state = OperationsStore(config.state_database, create=False) if Path(config.state_database).exists() else None
     deployment = state.deployment(config.deployment_id) if state else None
     alerts, assets = [], []
@@ -52,14 +54,18 @@ def check_health(config, *, as_of=None):
         if missing:
             alerts.append({"code": "missing_forecasts", "asset": stream.asset, "origins": missing})
         pending = [r for r in forecasts if r["label"] is None]
-        overdue = [r["forecast_id"] for r in pending if utc_timestamp(r["target_close_at"]) + timedelta(
-            minutes=config.schedule_delay_minutes + config.completion_grace_minutes
-        ) <= instant]
+        overdue = [r["forecast_id"] for r in pending if label_deadline(config, r) <= instant]
         if overdue:
             alerts.append({"code": "overdue_labels", "asset": stream.asset, "forecast_ids": overdue})
         deadlines = {s["origin"]: utc_timestamp(s["deadline_at"]) for s in slots}
         late = [r["origin_session"] for r in forecasts if r["origin_session"] in deadlines and
-                utc_timestamp(r["recorded_at"] if config.mode == "live" else r["as_of"]) > deadlines[r["origin_session"]]]
+                forecast_time(r, config.mode) > deadlines[r["origin_session"]]]
+        late_labels = [r["forecast_id"] for r in forecasts if r["label"] is not None
+                       and label_time(r["label"], config.mode) > label_deadline(config, r)]
+        if late:
+            alerts.append({"code": "late_forecasts", "asset": stream.asset, "origins": late})
+        if late_labels:
+            alerts.append({"code": "late_labels", "asset": stream.asset, "forecast_ids": late_labels})
         complete = len(forecasts) == stream.protocol["max_forecasts"] and not pending
         collection_complete = collection_complete and complete
         labelled = [r for r in forecasts if r["label"] is not None]
@@ -71,7 +77,7 @@ def check_health(config, *, as_of=None):
             "asset": stream.asset, "protocol_id": stream.protocol["protocol_id"], "expected_mature_origins": len(slots),
             "forecasts": len(forecasts), "scored": len(labelled), "pending_labels": len(pending),
             "missing_origins": missing, "overdue_labels": len(overdue), "collection_complete": complete,
-            "late_origins": late,
+            "late_origins": late, "late_labels": late_labels,
             "latest_origin": forecasts[-1]["origin_session"] if forecasts else None,
             "latest_target_session": forecasts[-1]["target_session"] if forecasts else None,
             "candidate_log_return": forecasts[-1]["predicted_log_return"] if forecasts else None,
@@ -96,7 +102,7 @@ def check_health(config, *, as_of=None):
             if job["status"] == "running" and utc_timestamp(job["lease_until"]) <= instant:
                 alerts.append({"code": "expired_job_lease", "asset": job["asset"], "origin": job["origin"], "job_id": job["job_id"]})
     return {
-        "schema_version": 1, "deployment_id": config.deployment_id, "mode": config.mode,
+        "schema_version": 2, "deployment_id": config.deployment_id, "mode": config.mode,
         "generated_at": _now(), "checked_as_of": effective,
         "status": "unhealthy" if alerts else ("collection_complete" if collection_complete else "healthy" if any_due else "not_due"),
         "alerts": alerts, "assets": assets,
@@ -131,13 +137,14 @@ def write_health(directory, report):
         forecast = f"{asset['candidate_log_return'] * 100:.3f}%" if asset["candidate_log_return"] is not None else "pending"
         skill = f"{asset['rmse_skill_vs_zero'] * 100:.3f}%" if asset["rmse_skill_vs_zero"] is not None else "pending"
         values = [asset["asset"], asset["latest_origin"], asset["latest_target_session"], forecast,
-                  asset["forecasts"], asset["scored"], skill, asset["pending_labels"], len(asset["missing_origins"])]
+                  asset["forecasts"], asset["scored"], skill, asset["pending_labels"], len(asset["missing_origins"]),
+                  len(asset.get("late_origins", [])), len(asset.get("late_labels", []))]
         rows.append("<tr>" + "".join(f"<td>{html.escape(str(v))}</td>" for v in values) + "</tr>")
     document = "<!doctype html><html lang='en'><meta charset='utf-8'><title>Forecast pipeline status</title>"
     document += "<style>body{font:16px system-ui;margin:2rem;max-width:1100px}td,th{padding:.6rem;border:1px solid #ccc}table{border-collapse:collapse}pre{white-space:pre-wrap}</style>"
     document += f"<h1>Forecast pipeline: {html.escape(report['status'])}</h1>"
     document += f"<p>Mode: {html.escape(report['mode'])}; checked: {html.escape(report['checked_as_of'])}</p>"
-    document += "<table><tr><th>Asset</th><th>Origin</th><th>Target session</th><th>Candidate log return</th><th>Forecasts</th><th>Scored</th><th>RMSE skill vs zero</th><th>Pending</th><th>Missing</th></tr>"
+    document += "<table><tr><th>Asset</th><th>Origin</th><th>Target session</th><th>Candidate log return</th><th>Forecasts</th><th>Scored</th><th>RMSE skill vs zero</th><th>Pending</th><th>Missing</th><th>Late forecasts</th><th>Late labels</th></tr>"
     document += "".join(rows) + "</table><h2>Active alerts</h2><pre>" + html.escape(json.dumps(report["alerts"], indent=2)) + "</pre>"
     document += "<p>Candidate forecasts are research outputs. Predictive advantage and investment returns are unverified.</p></html>"
     path = directory / "health.html"
