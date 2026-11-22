@@ -1,6 +1,8 @@
+import importlib.util
 import json
 import shutil
 from dataclasses import replace
+from pathlib import Path
 
 import exchange_calendars as xcals
 import numpy as np
@@ -329,3 +331,68 @@ def test_acceptance_cli_verifies_completed_replay_without_mutating_ledgers(sourc
     assert main(["batch", "acceptance", "--state-db", config.state_database, "--mode", "replay",
                  "--as-of", "2026-11-18T21:40:00Z", "--sessions", "2"]) == 2
     assert "Ledger input/model hash differs" in capsys.readouterr().out
+
+
+@pytest.fixture
+def recovery_tool():
+    path = Path(__file__).resolve().parents[1] / "scripts/pilot_recovery.py"
+    spec = importlib.util.spec_from_file_location("pilot_recovery", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_pilot_bundle_restores_both_stores_and_offline_inference(sources, tmp_path, monkeypatch, recovery_tool):
+    from sklearn.linear_model import Ridge
+
+    config, snapshots, _ = configure(sources, tmp_path)
+    for index, date in enumerate(("2026-11-16", "2026-11-17", "2026-11-18")):
+        run_daily(config, as_of=date + "T21:35:00Z", snapshots=snapshots[index])
+    before = {p: p.read_bytes() for p in (tmp_path / "ledger.sqlite", tmp_path / "ops.sqlite")}
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Recovery attempted training")
+
+    monkeypatch.setattr(Ridge, "fit", forbidden)
+    backup = recovery_tool.make_backup(config.state_database, "replay", tmp_path / "bundles")
+    receipt = json.loads((backup / "recovery_receipt.json").read_text())
+    assert receipt["database_contents"]["forecasts"]["forecasts"]["rows"] == 4
+    assert receipt["database_contents"]["forecasts"]["labels"]["rows"] == 4
+    drilled = recovery_tool.drill_backup(backup, tmp_path / "drills")
+    result = json.loads((drilled / "drill_receipt.json").read_text())
+    assert len(result["probes"]) == 2 and all(p["matches"] for p in result["probes"])
+    assert result["live_database_modified"] is False
+    assert all(p.read_bytes() == content for p, content in before.items())
+    assert verify_run(backup)["status"] == verify_run(drilled)["status"] == "completed"
+    (backup / "runtime/LICENSE").write_text("tampered backup")
+    with pytest.raises(ValueError, match="checksum"):
+        recovery_tool.drill_backup(backup, tmp_path / "other_drills")
+
+
+def test_pilot_backup_rejects_running_jobs(sources, tmp_path, recovery_tool):
+    config, snapshots, state = configure(sources, tmp_path)
+    run_daily(config, as_of="2026-11-16T21:35:00Z", snapshots=snapshots[0])
+    state.claim(config.deployment_id, "AAA", "2026-11-17", now="2026-11-17T21:35:00Z", lease_minutes=15)
+    with pytest.raises(ValueError, match="job is running"):
+        recovery_tool.make_backup(config.state_database, "replay", tmp_path / "bundles")
+
+
+def test_pilot_backup_retains_failure_when_other_connection_commits(sources, tmp_path, recovery_tool, monkeypatch):
+    import quant_forecast_lab.recovery as recovery
+
+    config, snapshots, state = configure(sources, tmp_path)
+    run_daily(config, as_of="2026-11-16T21:35:00Z", snapshots=snapshots[0])
+    original = recovery.copy_database
+
+    def change_state_after_copy(source, destination, **kwargs):
+        result = original(source, destination, **kwargs)
+        if Path(destination).name == "operations.sqlite":
+            state.heartbeat(config.deployment_id, now="2026-11-16T21:36:00Z", status="running", run="concurrent-worker")
+        return result
+
+    monkeypatch.setattr(recovery, "copy_database", change_state_after_copy)
+    with pytest.raises(ValueError, match="changed during capture"):
+        recovery_tool.make_backup(config.state_database, "replay", tmp_path / "bundles")
+    manifests = list((tmp_path / "bundles/pilot_backup").glob("*/manifest.json"))
+    assert len(manifests) == 1
+    assert json.loads(manifests[0].read_text())["status"] == "failed"
