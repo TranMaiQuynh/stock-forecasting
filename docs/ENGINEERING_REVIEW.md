@@ -8,7 +8,59 @@ as historical evidence. See the layout-cleanup record at the end of this file.
 Review date: 2026-11-11. Scope: imported Quant Forecast Lab source inside
 `D:/Github/StockForecasting`; parent Git branch `main`, HEAD `2557a56`.
 
-## Current execution: first-week operational review (2026-11-23)
+## Current execution: GitHub and clean-clone handoff (2026-11-23)
+
+Scope: publish the already verified release, verify hosted CI, and reproduce the
+lightweight installed demo from GitHub. No model search, market-candidate
+training, live-ledger mutation, scheduler changes or merge into `main` performed.
+The owner note remains untracked and untouched. Author identity was checked;
+every published commit since remote `b7dff83` changes exactly one file.
+
+| Task ID | Priority | Component | Issue | Action | Verification | Status | Commit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| C01 | P1 | Publishing/CI | Latest verified release was local only | Push development branch; inspect actual hosted workflow results | Commit `01ae535`, hosted run 45063351497: installation, installed import, lint/compile, offline tests, demos and artifact upload all succeeded | DONE | `01ae535` published |
+| C02 | P1 | Reproducibility | Reviewer must not depend on private pilot files | Clone branch directly from GitHub; install non-editable wheel using lockfile and empty dependency cache into a new environment | 262 tests passed without skips; synthetic batch demo verified 208 artifacts, rollback and restore; checkout remained clean | DONE | `01ae535` verified |
+| C03 | P2 | Onboarding | README lacked the current branch quickstart and CI evidence | Add clone/install/test/demo commands, branch-specific badge and expected incident outcomes | PowerShell and bash syntax checks; commands match verified installed demo; no runtime source changes | DONE | `867faaa`; this review |
+
+Hosted evidence: [release run 45063351497](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/45063351497).
+The development version is on `fix/forecasting-validation`; `main` remains
+unchanged. A portfolio link should point to
+[the development branch](https://github.com/TranMaiQuynh/stock-forecasting/tree/fix/forecasting-validation)
+until a separately reviewed merge is performed.
+
+Independent Windows checkout at `log/validation_cv_20261123/clean-clone`
+contains only GitHub-tracked source initially; no pilot data, model or fixture
+was copied into it. Python 3.12.16 was reused as the base interpreter, while its
+virtual environment and dependency cache were newly created. `uv 0.13.7 sync
+--locked --extra research --extra dev --no-editable` downloaded dependencies;
+the installed package resides in the new environment's `site-packages`, with
+no TensorFlow. This is a clean checkout/environment check on the existing host,
+complemented by the separate hosted Linux runner, not a new Windows host test.
+
+Windows result: **262 passed, 1113 warnings in 424.86 seconds**, no skips.
+Lint and compile passed. The demo returned exit 0, 2 forecasts/2 labels, verified
+rollback/restore and 208 artifacts across 21 completed child runs, retaining
+the deliberately failed child run. `health_status=unhealthy`, acceptance
+`not_ready` and streak 1/2 are expected: historical lateness survives recovery.
+Synthetic fixtures are not market evidence; promotion remains disabled.
+
+Local receipts and complete output: `log/validation_cv_20261123/`, especially
+`clean_receipt.json`, `clean_tests.txt`, `clean_demo_retry.txt` and
+`clean_demo_verification.txt`. The first verification driver mistakenly invoked
+the script with `-I`, hiding its sibling `demo_shadow` import. That harness
+failure and initial receipt are retained; the documented script command without
+`-I` passed, followed by a separate installed artifact-verification command.
+No project implementation or test was weakened to address the driver error.
+
+Assessment: the repository now has public CI evidence and a demonstrated demo
+path suitable for a CV. The prior production-readiness and predictive-skill
+limits below still apply. The 20 neural-runtime tests remain separately verified
+historical local evidence; this lightweight clean-clone run does not run them
+or require their private reference fixtures. macOS remains unverified. Hosted
+workflow artifacts have seven-day retention, so durable reproduction relies on
+the committed source, lockfile and documented commands rather than that upload.
+
+## Previous execution: first-week operational review (2026-11-23)
 
 Starting HEAD `f238a7d`, branch `fix/forecasting-validation`; tracked tree/index
 clean, owner author identity unchanged, untracked owner note preserved. Read-only
