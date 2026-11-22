@@ -8,7 +8,35 @@ as historical evidence. See the layout-cleanup record at the end of this file.
 Review date: 2026-11-11. Scope: imported Quant Forecast Lab source inside
 `D:/Github/StockForecasting`; parent Git branch `main`, HEAD `2557a56`.
 
-## Current execution: scheduled batch operations (2026-11-16)
+## Current execution: first-week operational review (2026-11-23)
+
+Starting HEAD `f238a7d`, branch `fix/forecasting-validation`; tracked tree/index
+clean, owner author identity unchanged, untracked owner note preserved. Read-only
+audit at 2026-11-23 local time found 8 live forecasts and 6 labels: each asset
+missed origin 2026-11-16, delivered origins 18/20 after the configured deadline,
+and labelled origins 17/19 late. Origin 20 labels are not due yet. Eight jobs
+succeeded and no failed stage events exist; execution gaps are verified, but
+host power/login/battery cause is unverified. The health task's exit 1 correctly
+signals the missing origins, not an application crash. No claim of 20-session
+acceptance, predictive edge or production readiness follows from these data.
+
+Baseline: installed v2 **239 offline tests passed, 729 warnings**, no skips;
+`log/validation_20261123/baseline_offline.txt`. Read-only audit receipt:
+`pilot_before.json`. KEEP frozen models/protocols and all existing records.
+FIX loss of historical label-timeliness visibility. EXTEND the existing CLI
+with an explicit operational acceptance report. VERIFY coordinated backup and
+restore using real ledger/state/artifacts. DEFER paid/remote infrastructure and
+new model searches; a powered, logged-in desktop is not a continuous host.
+
+| Task ID | Priority | Component | Issue | Action | Verification | Status | Commit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| S01 | P1 | Acceptance | Successful jobs do not establish 20 timely sessions | Read-only per-session paired delivery/label audit with consecutive-window gate | Missing/late/recovered labels, holidays, pending labels, immutable rows and replay/live isolation | IN_PROGRESS | pending |
+| S02 | P1 | Health | Late labels disappear from pending alerts after recovery | Retain historical late forecasts/labels in independent report | Historical lateness remains visible after successful jobs; exact deadline cases | TODO | pending |
+| S03 | P1 | Recovery | Only individual SQLite restore was demonstrated | Pause owned tasks; coordinated DB/artifact inventory and restore drill into new paths | Compare 8 predictions/6 labels, state history and artifact checksums; resume tasks | TODO | pending |
+| S04 | P1 | Release/handoff | Installed runtime must match verified source | Isolated release, installed tests/demo, task transition, learner explanations and updated review | One-file commits, source/wheel pin, real scheduled execution and preserved history | TODO | pending |
+| O07 | P1 | Future pilot acceptance | First observed week failed timing criteria | Continue frozen collection; require 20 consecutive future compliant sessions | Actual recorded evidence only; no retrospective forecasts or rewritten history | TODO | future operation |
+
+## Previous execution: scheduled batch operations (2026-11-16)
 
 The owner authorized the next roadmap after `19fda3d`. Branch remains
 `fix/forecasting-validation`; tracked tree/index were clean, owner identity
