@@ -117,8 +117,13 @@ def main(argv=None):
         if ForecastLedger(recovered).forecasts(mode="replay") != rows:
             raise RuntimeError("Restored forecast/label contents differ")
         health = check_health(config, as_of=final_time)
-        if health["status"] != "collection_complete":
-            raise RuntimeError(f"Recovered synthetic collection is not healthy: {health['alerts']}")
+        # Recovery completes the records; it cannot make the injected late
+        # delivery timely. Both old and new watchdogs expose late_origins.
+        historical_codes = {"late_forecasts", "late_labels"}
+        if (not all(a["collection_complete"] for a in health["assets"])
+                or any(a["code"] not in historical_codes for a in health["alerts"])
+                or first.date().isoformat() not in health["assets"][0]["late_origins"]):
+            raise RuntimeError(f"Recovered collection has unexpected failures: {health['alerts']}")
         write_health(run, health)
         checks = []
         for path in sorted(run.rglob("manifest.json")):
