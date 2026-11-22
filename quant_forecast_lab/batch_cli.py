@@ -23,16 +23,19 @@ def add_batch_commands(subparsers):
             command.add_argument("--reason", required=True)
     for name, help_text in (("run", "Run the active deployment once; resume durable stage checkpoints."),
                             ("health", "Independently check deliveries and leases; nonzero exit on alerts."),
+                            ("acceptance", "Audit consecutive timely sessions without changing records or promoting models."),
                             ("rollback", "Validate and reactivate the previous operational deployment.")):
         command = commands.add_parser(name, help=help_text)
         command.add_argument("--state-db", required=True)
         command.add_argument("--mode", choices=["live", "replay"], required=True)
-        if name in {"run", "health"}:
+        if name in {"run", "health", "acceptance"}:
             command.add_argument("--as-of", help="Replay-only timezone-aware simulated time.")
         if name == "run":
             command.add_argument("--snapshot", action="append", default=[], help="Replay-only ASSET=verified_snapshot_run.")
         elif name == "rollback":
             command.add_argument("--reason", required=True)
+        elif name == "acceptance":
+            command.add_argument("--sessions", type=int, default=20, help="Live pilot requires the predeclared 20 sessions; replay may use a smaller fixture.")
     backup = commands.add_parser("backup", help="Consistent SQLite snapshot to a new path; no file overwrite.")
     backup.add_argument("--source", required=True)
     backup.add_argument("--destination", required=True)
@@ -42,9 +45,12 @@ def add_batch_commands(subparsers):
 
 
 def run_batch_command(args):
+    from .acceptance import evaluate_acceptance
+    from .artifacts import verify_run
     from .batch_config import current_slot, load_config, parse_config
     from .daily import BatchFailure, run_daily
-    from .health import check_health, write_health
+    from .experiment import sha256_file
+    from .health import check_health, read_forecasts, write_health
     from .recovery import activate_config, active_config, copy_database, restore_database, rollback
     from .shadow import _effective, _now
 
@@ -100,6 +106,31 @@ def run_batch_command(args):
                 except BatchFailure as error:
                     result = {"status": "degraded", "run_directory": str(error.run), "summary": error.summary}
                     exit_code = 1
+            elif command == "acceptance":
+                effective = _effective(args.mode, args.as_of)
+                if args.mode == "live" and args.sessions != 20:
+                    raise ValueError("The live operational acceptance rule is fixed at 20 sessions; do not tune it after observing incidents.")
+                rows = read_forecasts(config.database, args.mode)
+                result = evaluate_acceptance(config, rows, as_of=effective, required_sessions=args.sessions)
+                origins = {s["origin"] for s in result["window"]}
+                streams = {s.protocol["protocol_id"]: s for s in config.streams}
+                paths = {s.model_run for s in config.streams}
+                for row in rows:
+                    stream = streams.get(row["protocol"]["protocol_id"])
+                    if stream is None or row["asset"] != stream.asset or row["origin_session"] not in origins:
+                        continue
+                    paths.update((row["snapshot_run"], row["forecast_run"]))
+                    if (sha256_file(Path(row["snapshot_run"]) / "close.csv") != row["input_sha256"]
+                            or stream.protocol["model_sha256"] != row["model_sha256"]):
+                        raise ValueError("Ledger input/model hash differs from its referenced delivery artifacts.")
+                result["artifact_checks"] = [verify_run(p) for p in sorted(paths)]
+                runtime = check_health(config, as_of=args.as_of)
+                blocking = {"heartbeat_missing", "heartbeat_stale", "last_batch_failed", "expired_job_lease", "deployment_definition_changed"}
+                result["runtime_blockers"] = [a for a in runtime["alerts"] if a["code"] in blocking]
+                if result["runtime_blockers"]:
+                    result["status"] = "not_ready"
+                result["history_scope"] = "Recent consecutive delivery window; historical watchdog incidents remain unchanged. Label source chains require the recovery inventory audit."
+                exit_code = int(result["status"] != "ready_for_operational_review")
             else:
                 _effective(args.mode, args.as_of)
                 result = check_health(config, as_of=args.as_of)
