@@ -56,7 +56,8 @@ Active deployment `equity-pilot-v3` uses
 `log/operations/live/config-release-v3.json`; both existing task actions use
 `.venv/batch312-v3`, preserving their wrapper/schedule and the v2 runtime for
 rollback. Models, protocols, training history and existing forecast/label rows
-are unchanged. No new fit, search or holdout analysis was performed.
+are unchanged. No market-candidate fit, search or holdout analysis was performed;
+tests and demos did train their explicitly synthetic fixtures.
 
 Actual Task Scheduler receipt `final_scheduler.json` confirms owner `aliza`,
 Interactive mode, ready tasks, 15/5-minute intervals and expected results:
