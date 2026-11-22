@@ -1,4 +1,5 @@
 import json
+import shutil
 from dataclasses import replace
 
 import exchange_calendars as xcals
@@ -196,7 +197,11 @@ def test_monitor_detects_never_started_and_missing_origins_after_last_forecast_w
     assert state.path.read_bytes() == before
     run_daily(config, as_of="2026-11-16T23:10:00Z", snapshots=snapshots[0])
     recovered = check_health(config, as_of="2026-11-16T23:11:00Z")
-    assert recovered["status"] == "healthy" and recovered["assets"][0]["late_origins"] == ["2026-11-16"]
+    # Version 1 exposes lateness as history; version 2 also raises an alert.
+    expected = "unhealthy" if recovered["schema_version"] >= 2 else "healthy"
+    assert recovered["status"] == expected and recovered["assets"][0]["late_origins"] == ["2026-11-16"]
+    if recovered["schema_version"] >= 2:
+        assert "late_forecasts" in {a["code"] for a in recovered["alerts"]}
     day_two = check_health(config, as_of="2026-11-17T23:05:00Z")
     assert day_two["assets"][0]["missing_origins"] == ["2026-11-17"]
     assert {a["code"] for a in day_two["alerts"]} >= {"overdue_labels", "heartbeat_stale"}
@@ -295,3 +300,32 @@ def test_registered_deployment_rejects_a_different_runtime(sources, tmp_path):
     changed = {**config.definition(), "runtime_source_sha256": "a" * 64}
     with pytest.raises(ValueError, match="Runtime source differs"):
         parse_config(changed, base=tmp_path)
+
+
+def test_acceptance_cli_verifies_completed_replay_without_mutating_ledgers(sources, tmp_path, capsys, monkeypatch):
+    from quant_forecast_lab import health
+    from quant_forecast_lab.cli import main
+
+    config, snapshots, _ = configure(sources, tmp_path)
+    for index, date in enumerate(("2026-11-16", "2026-11-17", "2026-11-18")):
+        run_daily(config, as_of=date + "T21:35:00Z", snapshots=snapshots[index])
+    before = {p: p.read_bytes() for p in (tmp_path / "ledger.sqlite", tmp_path / "ops.sqlite")}
+    assert main(["batch", "acceptance", "--state-db", config.state_database, "--mode", "replay",
+                 "--as-of", "2026-11-18T21:40:00Z", "--sessions", "2"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["status"] == "ready_for_operational_review"
+    assert report["consecutive_compliant_sessions"] == 2
+    assert report["artifact_checks"]
+    assert report["prospective_mode"] is False
+    assert report["runtime_blockers"] == []
+    assert all(p.read_bytes() == content for p, content in before.items())
+    # A retained receipt is not sufficient if its underlying input changes.
+    copied = tmp_path / "copied_snapshot"
+    shutil.copytree(snapshots[0]["AAA"], copied)
+    rows = ForecastLedger(config.database).forecasts(mode="replay")
+    rows[0]["snapshot_run"] = str(copied)
+    (copied / "close.csv").write_text("tampered source")
+    monkeypatch.setattr(health, "read_forecasts", lambda *args: rows)
+    assert main(["batch", "acceptance", "--state-db", config.state_database, "--mode", "replay",
+                 "--as-of", "2026-11-18T21:40:00Z", "--sessions", "2"]) == 2
+    assert "Ledger input/model hash differs" in capsys.readouterr().out
