@@ -22,17 +22,21 @@ Các lệnh LSTM kế thừa được lưu trong [Upstream guide](docs/UPSTREAM_
 Giải thích từ dữ liệu, thuật ngữ đến quyết định và bài tập:
 [Learning guide](docs/LEARNING_GUIDE.md).
 
-Phần vận hành mới (16/11/2026) đã có batch acquire → score → record,
+Phần vận hành cập nhật 23/11/2026 có batch acquire → score → record,
 job/checkpoint bền vững, chống dự báo trùng, health checker độc lập,
 activation/rollback và backup/restore SQLite. Pilot AAPL/MSFT đã đăng ký trên
-Windows; cả hai task chạy thử trả exit 0 trước phiên bắt đầu, chưa có dự báo
-prospective hoặc bằng chứng sinh lợi. Task cần máy bật và tài khoản đăng nhập.
+Windows, đã ghi **8 dự báo prospective và 6 nhãn**. Tuần đầu có phiên thiếu,
+dự báo muộn và nhãn chấm trễ; **chưa đạt nghiệm thu 20 phiên**. Release v3
+đánh giá từng phiên và giữ cảnh báo lịch sử sau phục hồi. Task cần máy bật và
+tài khoản đăng nhập. Chưa có bằng chứng sinh lợi.
 Hướng dẫn từ luồng tổng quan, thuật ngữ đến lệnh vận hành và xử lý sự cố:
 [Operations guide](docs/OPERATIONS.md).
 
-Môi trường batch riêng cài từ `uv.lock` không có TensorFlow, đã đạt **239 tests
+Môi trường batch riêng cài từ `uv.lock` không có TensorFlow, đã đạt **262 tests
 offline**, cộng **20 runtime tests** đạt riêng trong môi trường TensorFlow,
-và demo lỗi/phục hồi bằng dữ liệu giả. TensorFlow thuộc extra `neural`;
+và demo lỗi/phục hồi bằng dữ liệu giả. Diễn tập trên dữ liệu thật khôi phục hai
+database, 26 thư mục artifact nguồn và khớp inference AAPL/MSFT từ bản sao.
+Đây là phục hồi local, chưa là failover toàn host. TensorFlow thuộc extra `neural`;
 `requirements.txt` vẫn cài runtime đầy đủ. CI đã bổ sung lockfile và demo mới;
 phiên bản workflow vừa sửa chưa chạy trên hosted runner.
 
