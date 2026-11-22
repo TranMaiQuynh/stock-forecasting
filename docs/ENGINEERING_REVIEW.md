@@ -8,7 +8,44 @@ as historical evidence. See the layout-cleanup record at the end of this file.
 Review date: 2026-11-11. Scope: imported Quant Forecast Lab source inside
 `D:/Github/StockForecasting`; parent Git branch `main`, HEAD `2557a56`.
 
-## Current execution: GitHub and clean-clone handoff (2026-11-23)
+## Current execution: main integration and branch cleanup (2026-11-23)
+
+The default branch now contains the verified pipeline. [Pull Request #5](https://github.com/TranMaiQuynh/stock-forecasting/pull/5)
+passed its hosted checks and GitHub recorded it as merged at `20b74a6` after a
+fast-forward of `main` from `1e6769b`. All 152 incoming commits were checked:
+exactly one changed file each, owner author identity only, no merge commits.
+No existing commit was squashed, rebased, amended or rewritten.
+
+| Task ID | Priority | Component | Issue | Action | Verification | Status | Commit |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| M01 | P1 | Default branch | Public main still exposed the old implementation | Review PR, require passing PR CI, fast-forward and push main | PR #5 merged; run 45066904389 passed; main run 45067159605 passed | DONE | Existing `20b74a6` preserved |
+| M02 | P2 | Branch cleanup | Two completed remote fix branches obscured the canonical version | Verify both tips are ancestors of main, remove remote refs and merged local fix ref | GitHub API and ls-remote show only main; unmerged local backup preserved | DONE | Ref cleanup; no content commit |
+| M03 | P2 | Reviewer onboarding | Badge and clone command still targeted the deleted development branch | Point README to main; independently clone main, install wheel and run demo | README syntax passed; run 45067295141 passed; fresh main clone verified 208 demo artifacts and rollback/restore | DONE | `b6af9cb`; this review |
+
+Canonical portfolio URL: [stock-forecasting](https://github.com/TranMaiQuynh/stock-forecasting).
+Hosted main evidence: [run 45067295141](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/45067295141)
+for README commit `b6af9cb`. Runtime source, tests, workflow and lockfile remain
+identical to the release with 262 installed Windows tests and successful PR CI.
+
+The new `log/validation_main_20261123/main-clone` was cloned directly from
+GitHub main. It used a new `.venv/replay-demo` and non-editable installation
+from `uv.lock`, reusing the previously downloaded dependency cache offline.
+No private fixtures or pilot artifacts were supplied. Its installed demo
+returned exit 0, 2 forecasts/2 labels, 21 completed child runs and 208 verified
+artifacts, with rollback/restore verified. Expected historical-incident health
+remains unhealthy and acceptance not_ready; synthetic evidence is not alpha.
+Receipts, ancestry checks and complete stage logs are under
+`log/validation_main_20261123/`. The final documentation-only commit receives
+its own hosted main check; its result is retained in the local handoff receipt.
+
+GitHub now has one branch, `main`. Local `backup-local-work-before-pull` at
+`c5b9512` contains unmerged owner work and is intentionally retained, never
+published or deleted. The untracked owner note is also preserved. No market
+training, live-data modification, scheduler change or infrastructure deployment
+was performed. Production and predictive-performance limitations remain as
+documented below; this task improves publication and discoverability.
+
+## Previous execution: GitHub and clean-clone handoff (2026-11-23)
 
 Scope: publish the already verified release, verify hosted CI, and reproduce the
 lightweight installed demo from GitHub. No model search, market-candidate
@@ -23,10 +60,10 @@ every published commit since remote `b7dff83` changes exactly one file.
 | C03 | P2 | Onboarding | README lacked the current branch quickstart and CI evidence | Add clone/install/test/demo commands, branch-specific badge and expected incident outcomes | PowerShell and bash syntax checks; commands match verified installed demo; no runtime source changes | DONE | `867faaa`; this review |
 
 Hosted evidence: [release run 45063351497](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/45063351497).
-The development version is on `fix/forecasting-validation`; `main` remains
-unchanged. A portfolio link should point to
-[the development branch](https://github.com/TranMaiQuynh/stock-forecasting/tree/fix/forecasting-validation)
-until a separately reviewed merge is performed.
+At that handoff the development version was on `fix/forecasting-validation`
+and `main` remained unchanged. The historical snapshot is preserved at
+[commit 20b74a6](https://github.com/TranMaiQuynh/stock-forecasting/tree/20b74a6c81cdbd1c12706ef3d7d0a314458e3aeb).
+The main integration above supersedes the earlier branch-specific portfolio link.
 
 Independent Windows checkout at `log/validation_cv_20261123/clean-clone`
 contains only GitHub-tracked source initially; no pilot data, model or fixture
