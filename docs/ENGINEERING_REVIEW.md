@@ -30,11 +30,109 @@ new model searches; a powered, logged-in desktop is not a continuous host.
 
 | Task ID | Priority | Component | Issue | Action | Verification | Status | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| S01 | P1 | Acceptance | Successful jobs do not establish 20 timely sessions | Read-only per-session paired delivery/label audit with consecutive-window gate | Missing/late/recovered labels, holidays, pending labels, immutable rows and replay/live isolation | IN_PROGRESS | pending |
-| S02 | P1 | Health | Late labels disappear from pending alerts after recovery | Retain historical late forecasts/labels in independent report | Historical lateness remains visible after successful jobs; exact deadline cases | TODO | pending |
-| S03 | P1 | Recovery | Only individual SQLite restore was demonstrated | Pause owned tasks; coordinated DB/artifact inventory and restore drill into new paths | Compare 8 predictions/6 labels, state history and artifact checksums; resume tasks | TODO | pending |
-| S04 | P1 | Release/handoff | Installed runtime must match verified source | Isolated release, installed tests/demo, task transition, learner explanations and updated review | One-file commits, source/wheel pin, real scheduled execution and preserved history | TODO | pending |
+| S01 | P1 | Acceptance | Successful jobs do not establish 20 timely sessions | Read-only per-session paired delivery/label audit with consecutive-window gate | 15 unit cases; integrated CLI/artifact checks; no ledger mutation; live rule remains 20 | DONE | `c60a920`, `291b641`, `20f564e`, `4bd278d` |
+| S02 | P1 | Health | Late labels disappear from pending alerts after recovery | Retain historical late forecasts/labels in version-2 independent report | 42 focused tests; 2 transition checks on isolated v1; recovered lateness remains visible | DONE | `6dcf82f`, `8728844`, `d975f00` |
+| S03 | P1 | Recovery | Only individual SQLite restore was demonstrated | Pause owned tasks; coordinated DB/artifact inventory and restore drill into new paths | 3 failure/recovery tests; actual 8 predictions/6 labels and 2 matching copied-inference probes; tasks resumed | DONE | `8b3f705`, `e926e0c` |
+| S04 | P1 | Release/handoff | Installed runtime must match verified source | Isolated release, installed tests/demo, task transition, learner explanations and updated review | 262 installed offline + 20 neural-runtime tests; source/wheel pin and actual v3 task results | DONE | `45b5043`; this review |
 | O07 | P1 | Future pilot acceptance | First observed week failed timing criteria | Continue frozen collection; require 20 consecutive future compliant sessions | Actual recorded evidence only; no retrospective forecasts or rewritten history | TODO | future operation |
+
+### Verified handoff and limits
+
+Final installed `.venv/batch312-v3` regression: **262 passed, 1113 warnings in
+439.47 seconds**. Separate existing TensorFlow runtime: **20 passed, 8 warnings
+in 53.03 seconds**. All **282 current tests** passed across these environments;
+no tests were skipped or weakened. Ruff, compileall, locked dependency check and
+55-package compatibility check passed. Warnings remain recorded, primarily
+pandas timezone deprecations. Receipts/logs are under `log/validation_20261123/`.
+The first focused run exposed an old v1 expectation that a recovered late
+forecast clears health; its failed log is retained. The strengthened test
+supports v1/v2 report contracts explicitly. An isolated source export with the
+old health implementation passed both transition tests before the one-file
+commits changed the health report to v2.
+
+Installed source/wheel pin:
+`00a28732affc838fdb03b12b532634ccc9fc0ca9042dbb6aec8e731534ec65e1`.
+Active deployment `equity-pilot-v3` uses
+`log/operations/live/config-release-v3.json`; both existing task actions use
+`.venv/batch312-v3`, preserving their wrapper/schedule and the v2 runtime for
+rollback. Models, protocols, training history and existing forecast/label rows
+are unchanged. No new fit, search or holdout analysis was performed.
+
+Actual Task Scheduler receipt `final_scheduler.json` confirms owner `aliza`,
+Interactive mode, ready tasks, 15/5-minute intervals and expected results:
+**run=0, health=1**. The health result is a deliberate incident signal, not a
+crash. Battery restrictions and lack of wake-to-run are verified; these settings
+were preserved. They are possible availability constraints, not proof of what
+caused each past gap. No whole-host uptime claim is made.
+
+Actual `live_acceptance.json`: **not_ready**, **0 consecutive compliant
+sessions**, assessed origins **2026-11-16 through 2026-11-20**; 18 model/input/
+inference runs verified, no current runtime blockers. Every origin has at least
+one missing/late forecast or late label for the paired assets. The 2 pending
+labels are still future observations, not failures. Historical incidents are
+retained; a later 20-session window is a separate review, not an erasure of
+those incidents. Replay cannot supply prospective evidence. The only 3 labelled
+observations per asset currently give descriptive RMSE skill versus zero of
+approximately **-6.82% AAPL / -1.58% MSFT**. This tiny, timing-impaired sample
+neither establishes alpha nor justifies retuning the frozen candidates.
+
+The installed synthetic demo
+`log/batch_demo/20261122T191135_187897Z_29b6bfad` verified **208 artifacts** and
+21 completed child runs, retained its injected failed run, and deliberately
+returns `health=unhealthy`, `operational_acceptance=not_ready`, streak 1 of 2.
+Its database is recovered, but its historical late delivery is not made timely.
+The demo stays explicitly synthetic/replay, with promotion disabled.
+
+Coordinated real-data capture paused both owned tasks and resumed them in
+`finally`. Backup:
+`log/recovery_20261123/pilot_backup/20261122T191322_297347Z_c8cb8cfb`:
+**26 verified source directories / 271 inventoried artifacts**, including both
+logical databases, protocols, forecast/label input sources and active v2 code.
+Restore drill:
+`log/recovery_20261123/pilot_recovery_drill/20261122T191333_572703Z_b1b7dec2`:
+**254 artifacts**, matching 8 forecast and 6 label records, operations table
+contents and 2 offline numerical forecasts from copied sources. Database
+`data_version` guards reject external commits during capture. No real ledger
+was overwritten and no replay probe was recorded as a prospective forecast.
+
+This is local serving recovery. Absolute ledger paths remain; relocated live
+activation, dependency-wheel provisioning, task recreation, offsite storage,
+continuous-host availability and full-host failover are unverified. Earlier
+unverified container status is not reclassified as complete. New hosted CI has
+not run because no push was requested. Source, tests and demo are ready for an
+authorized push; the existing owner note stays untracked.
+
+### Independent assessment after first-week evidence
+
+| Dimension | Score / 5 | Evidence | Remaining weakness / measurable next step |
+| --- | --- | --- | --- |
+| Architecture | 3 | Separate research, immutable ledger, jobs, health, acceptance and recovery tool | Internal shadow helpers remain shared; extract public contracts only when justified |
+| Code quality | 3 | Bounded retries, input validation, explicit versioned health contract and Ruff | Static typing is partial; strengthen high-risk interfaces incrementally |
+| Functional correctness | 4 | 282 passing tests, partial-commit, corruption, concurrent capture and real restore checks | Actual delivery deadlines failed; require 20 consecutive observed compliant sessions |
+| ML correctness | 4 | Frozen checkpoints/protocols, temporal tests and matched zero-return baseline | Only 3 labels per asset; do not promote or tune on this evidence |
+| Reproducibility | 4 | Locked wheel install, source parity, lineage and copied offline inference | Vendor revisions/PIT quality and data licensing remain unresolved |
+| Testing/reliability | 4 | Installed offline + neural regressions, synthetic incidents and actual recovery | Run revised hosted Linux CI after authorized push; measure longer-term resource behavior |
+| E2E completeness | 3 | Actual acquisition/forecast/label records plus scheduled health and acceptance audit | Future operational acceptance and full-host recovery remain incomplete; no automatic promotion |
+| Deployment/operations | 2 | Real owner tasks, isolated v3 release, retained rollback runtime and actual backup drill | Desktop gaps/battery/login remain; provision continuous host and external outage detection |
+| Documentation/DX | 4 | Vietnamese walkthrough, real incident explanations and runnable commands | Follow offline demo before live; market candidates/receipts are local artifacts |
+| Practical/portfolio value | 3 | Real auditable forecasts, explicit SLO failure and verified recovery | No predictive advantage, investment benefit, production uptime or adoption evidence |
+
+**Technical verdict:** maintainable research and local prospective batch system
+with tested operational controls. **ML Engineering verdict:** credible lifecycle
+and reliability evidence; model superiority is unproven. **Practical value:**
+usable to collect, trace and audit forecasts and study operational failures.
+**Production readiness:** not ready for unattended production. **Development
+recommendation:** continue the narrow frozen pilot, prioritizing availability
+and repeatable recovery over model complexity.
+
+Roadmap: (P1) ensure power/login/network or provision an authorized continuously
+available host and independent watchdog; (P1) demonstrate 20 consecutive timely
+paired forecast/label sessions under the frozen criteria; (P1) implement offsite
+backup and rehearse full restoration/activation on a second host with measured
+RTO/RPO; (P1) establish permitted point-in-time data use; (P2) run hosted CI and
+set retention from measured storage needs. A compliant operational window still
+requires separate, adequately powered prospective predictive validation before
+any model-promotion or profitability claim.
 
 ## Previous execution: scheduled batch operations (2026-11-16)
 
