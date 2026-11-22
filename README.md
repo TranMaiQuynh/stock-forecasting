@@ -1,5 +1,7 @@
 # StockForecasting
 
+[![Forecast research checks](https://github.com/TranMaiQuynh/stock-forecasting/actions/workflows/ci.yml/badge.svg?branch=fix%2Fforecasting-validation)](https://github.com/TranMaiQuynh/stock-forecasting/actions?query=workflow%3A%22Forecast+research+checks%22+branch%3Afix%2Fforecasting-validation)
+
 Dự án học và phát triển kỹ thuật dự báo chuỗi thời gian, kế thừa
 [Quant Forecast Lab](https://github.com/JordiCorbilla/stock-prediction-deep-neural-learning)
 của Jordi Corbilla. Mã nguồn hiện nằm trực tiếp tại Git root
@@ -37,8 +39,53 @@ offline**, cộng **20 runtime tests** đạt riêng trong môi trường Tensor
 và demo lỗi/phục hồi bằng dữ liệu giả. Diễn tập trên dữ liệu thật khôi phục hai
 database, 26 thư mục artifact nguồn và khớp inference AAPL/MSFT từ bản sao.
 Đây là phục hồi local, chưa là failover toàn host. TensorFlow thuộc extra `neural`;
-`requirements.txt` vẫn cài runtime đầy đủ. CI đã bổ sung lockfile và demo mới;
-phiên bản workflow vừa sửa chưa chạy trên hosted runner.
+`requirements.txt` vẫn cài runtime đầy đủ. Hosted CI trên Linux đã đạt cho commit
+`01ae535`: cài từ lockfile, lint/compile, test offline và demo synthetic
+([run 45063351497](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/45063351497)).
+
+## Chạy demo từ bản clone mới
+
+Phiên bản phát triển nằm trên nhánh `fix/forecasting-validation`; `main` hiện
+chưa chứa các thay đổi này. Cần Git, Python **3.12** và mạng để tải dependency
+lần đầu. Demo tự tạo dữ liệu giả, không cần API key, dữ liệu thị trường local,
+TensorFlow hay reference model của upstream.
+
+Windows PowerShell:
+
+~~~powershell
+git clone --single-branch --branch fix/forecasting-validation https://github.com/TranMaiQuynh/stock-forecasting.git
+cd stock-forecasting
+python --version  # Cần Python 3.12
+python -m pip install "uv==0.13.7"
+$env:UV_PROJECT_ENVIRONMENT = '.venv/replay-demo'
+uv sync --locked --extra research --extra dev --no-editable
+.\.venv\replay-demo\Scripts\python.exe -I -m pytest tests --import-mode=importlib
+.\.venv\replay-demo\Scripts\python.exe scripts/demo_batch.py --installed-package
+~~~
+
+Linux/macOS shell, sau khi clone và vào thư mục như trên:
+
+~~~bash
+python3.12 -m pip install 'uv==0.13.7'
+export UV_PROJECT_ENVIRONMENT=.venv/replay-demo
+uv sync --python python3.12 --locked --extra research --extra dev --no-editable
+.venv/replay-demo/bin/python -I -m pytest tests --import-mode=importlib
+.venv/replay-demo/bin/python scripts/demo_batch.py --installed-package
+~~~
+
+Linux được kiểm chứng trên GitHub Actions; macOS chưa được kiểm chứng.
+`--locked` yêu cầu dùng đúng lockfile; `--no-editable` cài package thực vào môi
+trường thay vì trỏ ngược về source. Dùng môi trường mới, không sync đè runtime
+đang phục vụ pilot nếu bạn đã có một deployment.
+
+Kết quả mong đợi: **262 tests đạt**; demo trả exit 0 và in đường dẫn `demo_run`,
+`market_evidence=false`, `forecasts=2`, `scored=2`, `rollback_verified=true`,
+`restore_verified=true`. Mở `receipt.json`, `acceptance.json` và
+`health.html` trong thư mục run để xem bằng chứng.
+Demo cố ý tạo lỗi giao nhận: `health_status=unhealthy` và
+`operational_acceptance=not_ready` là kết quả đúng, vì khôi phục dữ liệu không
+xóa việc giao dự báo muộn trong lịch sử. Demo không đăng ký Task Scheduler,
+không ghi dự báo live và không chứng minh khả năng sinh lợi.
 
 ## Cấu trúc dự án
 
@@ -378,9 +425,10 @@ python -m quant_forecast_lab.cli --help
 việc chạy bộ này. Bộ runtime local đã đạt; scaler JSON đã được đối chiếu với
 bản pickle trong đúng runtime gốc. Việc này chưa tái lập training của upstream.
 Workflow ở Git root kiểm tra phần offline trên Python 3.12; hosted GitHub Actions
-đã đạt trên nhánh `fix/forecasting-validation`, commit `336d9c3`, tại
-[run 43536926997](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/43536926997):
-lint/compile, test nhẹ và demo synthetic gồm policy mới đều thành công trên Linux. Bộ TensorFlow
+đã đạt trên nhánh `fix/forecasting-validation`, commit `01ae535`, tại
+[run 45063351497](https://github.com/TranMaiQuynh/stock-forecasting/actions/runs/45063351497):
+cài package từ lockfile, lint/compile, test offline và demo synthetic phục hồi
+đều thành công trên Linux. Bộ TensorFlow
 đầy đủ được xác minh riêng trên Windows như trên; reference fixtures được cấp
 riêng thay vì đưa vào Git.
 
