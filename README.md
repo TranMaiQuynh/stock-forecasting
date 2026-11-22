@@ -1,6 +1,6 @@
 # StockForecasting
 
-[![Forecast research checks](https://github.com/TranMaiQuynh/stock-forecasting/actions/workflows/ci.yml/badge.svg?branch=fix%2Fforecasting-validation)](https://github.com/TranMaiQuynh/stock-forecasting/actions?query=workflow%3A%22Forecast+research+checks%22+branch%3Afix%2Fforecasting-validation)
+[![Forecast research checks](https://github.com/TranMaiQuynh/stock-forecasting/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/TranMaiQuynh/stock-forecasting/actions?query=workflow%3A%22Forecast+research+checks%22+branch%3Amain)
 
 Dự án học và phát triển kỹ thuật dự báo chuỗi thời gian, kế thừa
 [Quant Forecast Lab](https://github.com/JordiCorbilla/stock-prediction-deep-neural-learning)
@@ -45,15 +45,16 @@ database, 26 thư mục artifact nguồn và khớp inference AAPL/MSFT từ b�
 
 ## Chạy demo từ bản clone mới
 
-Phiên bản phát triển nằm trên nhánh `fix/forecasting-validation`; `main` hiện
-chưa chứa các thay đổi này. Cần Git, Python **3.12** và mạng để tải dependency
-lần đầu. Demo tự tạo dữ liệu giả, không cần API key, dữ liệu thị trường local,
-TensorFlow hay reference model của upstream.
+Phiên bản đã kiểm chứng nằm trên nhánh mặc định **`main`**, được tích hợp qua
+[Pull Request #5](https://github.com/TranMaiQuynh/stock-forecasting/pull/5).
+Cần Git, Python **3.12** và mạng để tải dependency lần đầu. Demo tự tạo dữ liệu
+giả, không cần API key, dữ liệu thị trường local, TensorFlow hay reference model
+của upstream.
 
 Windows PowerShell:
 
 ~~~powershell
-git clone --single-branch --branch fix/forecasting-validation https://github.com/TranMaiQuynh/stock-forecasting.git
+git clone --single-branch --branch main https://github.com/TranMaiQuynh/stock-forecasting.git
 cd stock-forecasting
 python --version  # Cần Python 3.12
 python -m pip install "uv==0.13.7"
